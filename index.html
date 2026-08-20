@@ -1,0 +1,2854 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Whiteboard Group Splitter</title>
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1400px;
+      margin: 20px auto;
+      padding: 0 20px;
+      line-height: 1.4;
+      color: #333;
+      background: #fafafa;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .flex-container {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    select {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+      padding: 10px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      resize: vertical;
+      font-family: Arial, sans-serif;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #0066cc;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 15px;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #004999;
+    }
+
+    button.secondary {
+      background: #6c757d;
+    }
+
+    button.secondary:hover {
+      background: #5a6268;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+    }
+
+    .error {
+      color: #cc0000;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .roster-header {
+      font-weight: bold;
+      margin: 15px 0 5px;
+      color: #444;
+    }
+
+    .roster-list {
+      display: grid;
+      grid-template-columns:
+        repeat(auto-fill, minmax(180px, 1fr));
+      gap: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 4px;
+      background: #fff;
+    }
+
+    .roster-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      background: #f8f9fa;
+      padding: 4px 8px;
+      border-radius: 4px;
+      min-width: 0;
+    }
+
+    .roster-item label {
+      cursor: pointer;
+      flex-grow: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* =====================================================
+       OVERRIDE TOGGLE
+       ===================================================== */
+
+    .override-toggle {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 14px;
+      cursor: pointer;
+      user-select: none;
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: white;
+    }
+
+    .override-toggle:hover {
+      background: #f5f5f5;
+    }
+
+    .override-toggle input {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      margin: 0;
+    }
+
+    /* =====================================================
+       CLASSROOM
+       ===================================================== */
+
+    .classroom-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(8, minmax(0, 1fr));
+
+      grid-template-rows:
+        minmax(70px, auto)
+        minmax(100px, auto)
+        minmax(100px, auto)
+        minmax(100px, auto)
+        minmax(100px, auto);
+
+      gap: clamp(6px, 1vw, 12px);
+
+      width: 100%;
+      margin-top: 20px;
+    }
+
+    .board {
+      background: #f4f4f4;
+      border: 2px dashed #ccc;
+
+      padding:
+        clamp(5px, 0.8vw, 10px);
+
+      border-radius: 6px;
+
+      min-width: 0;
+      width: 100%;
+      min-height: 90px;
+
+      display: flex;
+      flex-direction: column;
+
+      transition:
+        background 0.2s,
+        border-color 0.2s,
+        transform 0.15s;
+    }
+
+    .board.drag-over {
+      background: #e0f0ff;
+      border-color: #0066cc;
+      transform: scale(1.01);
+    }
+
+    .board.over-limit {
+      border-color: #cc0000;
+      background: #fff5f5;
+    }
+
+    .board h3 {
+      margin: 0 0 8px;
+
+      font-size:
+        clamp(9px, 1vw, 13px);
+
+      color: #0066cc;
+
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 4px;
+
+      text-align: center;
+
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .board .limit {
+      font-weight: normal;
+      color: #666;
+
+      font-size:
+        clamp(7px, 0.8vw, 11px);
+    }
+
+    .board ul {
+      margin: 0;
+      padding: 0;
+
+      min-height: 60px;
+
+      list-style: none;
+      flex-grow: 1;
+    }
+
+    .board li {
+      padding:
+        clamp(3px, 0.5vw, 6px)
+        clamp(4px, 0.7vw, 8px);
+
+      margin: 4px 0;
+
+      background: white;
+
+      border: 1px solid #ddd;
+      border-radius: 4px;
+
+      cursor: grab;
+
+      box-shadow:
+        0 1px 3px rgba(0,0,0,0.05);
+
+      font-size:
+        clamp(8px, 0.9vw, 12px);
+
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+
+      user-select: none;
+    }
+
+    .board li:active {
+      cursor: grabbing;
+    }
+
+    /* =====================================================
+       ROOM POSITIONS
+       ===================================================== */
+
+    .l-smartboard {
+      grid-column: 3 / span 2;
+      grid-row: 1;
+    }
+
+    .r-smartboard {
+      grid-column: 5 / span 2;
+      grid-row: 1;
+    }
+
+    .easel {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .casteel {
+      grid-column: 8;
+      grid-row: 2;
+    }
+
+    .bird {
+      grid-column: 1;
+      grid-row: 3;
+    }
+
+    .printer {
+      grid-column: 8;
+      grid-row: 3;
+    }
+
+    .sink {
+      grid-column: 1;
+      grid-row: 4;
+    }
+
+    .tv {
+      grid-column: 8;
+      grid-row: 4;
+    }
+
+    .b6 {
+      grid-column: 2;
+      grid-row: 5;
+    }
+
+    .b5 {
+      grid-column: 3;
+      grid-row: 5;
+    }
+
+    .b4 {
+      grid-column: 4;
+      grid-row: 5;
+    }
+
+    .b3 {
+      grid-column: 5;
+      grid-row: 5;
+    }
+
+    .b2 {
+      grid-column: 6;
+      grid-row: 5;
+    }
+
+    .b1 {
+      grid-column: 7;
+      grid-row: 5;
+    }
+
+    .thermostat {
+      grid-column: 8;
+      grid-row: 5;
+    }
+
+    /* =====================================================
+       PICKER LAUNCH CARD
+       ===================================================== */
+
+    .picker-launch-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+    }
+
+    .picker-launch-card h3 {
+      margin: 0 0 4px;
+    }
+
+    .picker-launch-card p {
+      margin: 0;
+      color: #666;
+    }
+
+    .open-picker-button {
+      white-space: nowrap;
+    }
+
+    /* =====================================================
+       PICKER MODAL
+       ===================================================== */
+
+    .picker-modal {
+      display: none;
+
+      position: fixed;
+      inset: 0;
+
+      z-index: 1000;
+
+      background: rgba(0, 0, 0, 0.55);
+
+      align-items: center;
+      justify-content: center;
+
+      padding: 20px;
+    }
+
+    .picker-modal.open {
+      display: flex;
+    }
+
+    .picker-modal-content {
+      position: relative;
+
+      width: min(700px, 100%);
+      max-height: 95vh;
+
+      overflow-y: auto;
+
+      background: white;
+
+      border-radius: 12px;
+
+      padding: 25px;
+
+      box-shadow:
+        0 20px 60px rgba(0,0,0,0.3);
+
+      animation:
+        modalOpen 0.18s ease-out;
+    }
+
+    @keyframes modalOpen {
+
+      from {
+        opacity: 0;
+        transform:
+          translateY(15px)
+          scale(0.98);
+      }
+
+      to {
+        opacity: 1;
+        transform:
+          translateY(0)
+          scale(1);
+      }
+
+    }
+
+    .picker-modal-header {
+      display: flex;
+
+      align-items: center;
+
+      justify-content: space-between;
+
+      gap: 15px;
+
+      margin-bottom: 5px;
+    }
+
+    .picker-modal-header h2 {
+      margin: 0;
+
+      font-size: 22px;
+    }
+
+    .close-modal-button {
+      width: 38px;
+      height: 38px;
+
+      padding: 0;
+
+      background: #f0f0f0;
+
+      color: #333;
+
+      font-size: 25px;
+
+      line-height: 1;
+
+      border-radius: 50%;
+    }
+
+    .close-modal-button:hover {
+      background: #ddd;
+      color: #111;
+    }
+
+    /* =====================================================
+       WHEEL
+       ===================================================== */
+
+    .wheel-card {
+      text-align: center;
+    }
+
+    .wheel-container {
+      position: relative;
+
+      width: min(520px, 90vw);
+
+      margin: 20px auto;
+    }
+
+    #studentWheel {
+      display: block;
+
+      width: 100%;
+      height: auto;
+
+      border-radius: 50%;
+
+      border: 5px solid #444;
+
+      box-shadow:
+        0 5px 20px rgba(0,0,0,0.18);
+
+      transform: rotate(0deg);
+    }
+
+    .wheel-pointer {
+      position: absolute;
+
+      top: -8px;
+      left: 50%;
+
+      transform:
+        translateX(-50%);
+
+      width: 0;
+      height: 0;
+
+      border-left:
+        18px solid transparent;
+
+      border-right:
+        18px solid transparent;
+
+      border-top:
+        35px solid #e00000;
+
+      z-index: 5;
+
+      filter:
+        drop-shadow(
+          0 2px 2px
+          rgba(0,0,0,0.25)
+        );
+    }
+
+    .winner-display {
+      min-height: 38px;
+
+      text-align: center;
+
+      font-size: 28px;
+
+      font-weight: bold;
+
+      color: #0066cc;
+
+      margin-top: 10px;
+    }
+
+    .wheel-status {
+      color: #666;
+
+      font-size: 14px;
+
+      margin-top: 5px;
+    }
+
+    .spin-button {
+      font-size: 18px;
+
+      padding: 12px 30px;
+    }
+
+    .picker-controls {
+      display: flex;
+
+      justify-content: center;
+
+      align-items: center;
+
+      gap: 12px;
+
+      flex-wrap: wrap;
+
+      margin-top: 10px;
+    }
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
+
+    @media (max-width: 800px) {
+
+      body {
+        padding: 0 10px;
+      }
+
+      .classroom-grid {
+        gap: 6px;
+      }
+
+      .board {
+        min-height: 80px;
+      }
+
+    }
+
+    @media (max-width: 550px) {
+
+      body {
+        padding: 0 6px;
+      }
+
+      .card {
+        padding: 12px;
+      }
+
+      .flex-container {
+        flex-direction: column;
+
+        align-items: stretch;
+      }
+
+      .flex-container select,
+      .flex-container button,
+      .override-toggle {
+        width: 100%;
+      }
+
+      .classroom-grid {
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 8px;
+      }
+
+      .l-smartboard,
+      .r-smartboard,
+      .easel,
+      .bird,
+      .sink,
+      .casteel,
+      .printer,
+      .tv,
+      .b6,
+      .b5,
+      .b4,
+      .b3,
+      .b2,
+      .b1,
+      .thermostat {
+        grid-column: auto;
+        grid-row: auto;
+      }
+
+      .winner-display {
+        font-size: 22px;
+      }
+
+      .picker-launch-card {
+        flex-direction: column;
+
+        align-items: stretch;
+
+        text-align: center;
+      }
+
+      .open-picker-button {
+        width: 100%;
+      }
+
+      .picker-modal {
+        padding: 8px;
+      }
+
+      .picker-modal-content {
+        padding: 15px;
+
+        max-height: 98vh;
+      }
+
+      .wheel-container {
+        width: min(450px, 88vw);
+      }
+
+    }
+
+  </style>
+</head>
+
+<body>
+
+  <!-- =====================================================
+       GROUP CONTROLS
+       ===================================================== -->
+
+  <div class="card">
+
+    <p
+      style="
+        margin-top:0;
+        font-weight:bold;
+      "
+    >
+      Paste names:
+    </p>
+
+    <textarea
+      id="studentInput"
+      placeholder="Alice&#10;Bob&#10;Charlie..."
+    ></textarea>
+
+    <div
+      class="flex-container"
+      style="margin-top:12px;"
+    >
+
+      <select
+        id="periodSelect"
+        onchange="loadPeriodRoster()"
+      >
+        <option value="1">
+          Period 1
+        </option>
+
+        <option value="2">
+          Period 2
+        </option>
+
+        <option value="3">
+          Period 3
+        </option>
+
+        <option value="4">
+          Period 4
+        </option>
+
+        <option value="5">
+          Period 5
+        </option>
+
+        <option value="6">
+          Period 6
+        </option>
+
+        <option value="7">
+          Period 7
+        </option>
+      </select>
+
+      <button
+        class="secondary"
+        onclick="savePeriodRoster()"
+      >
+        Save to Period
+      </button>
+
+      <button
+        onclick="splitGroups()"
+      >
+        Make Groups
+      </button>
+
+      <label class="override-toggle">
+
+        <input
+          type="checkbox"
+          id="overrideCapacity"
+        >
+
+        Override capacity
+
+      </label>
+
+    </div>
+
+    <div
+      id="rosterSection"
+      style="display:none;"
+    >
+
+      <div class="roster-header">
+        Uncheck Absent Students:
+      </div>
+
+      <div
+        id="rosterList"
+        class="roster-list"
+      ></div>
+
+    </div>
+
+    <div
+      id="errorMsg"
+      class="error"
+    ></div>
+
+  </div>
+
+
+  <!-- =====================================================
+       ROOM RESULTS
+       ===================================================== -->
+
+  <div id="results"></div>
+
+
+  <!-- =====================================================
+       RANDOM PICKER LAUNCHER
+       ===================================================== -->
+
+  <div class="card picker-launch-card">
+
+    <div>
+
+      <h3>
+        Random Student Picker
+      </h3>
+
+      <p>
+        Open the picker to randomly select a student.
+      </p>
+
+    </div>
+
+    <button
+      class="open-picker-button"
+      onclick="openPickerModal()"
+    >
+      Pick Random Student
+    </button>
+
+  </div>
+
+
+  <!-- =====================================================
+       RANDOM PICKER MODAL
+       ===================================================== -->
+
+  <div
+    id="pickerModal"
+    class="picker-modal"
+    onclick="handleModalBackgroundClick(event)"
+  >
+
+    <div
+      class="picker-modal-content"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="pickerModalTitle"
+    >
+
+      <div class="picker-modal-header">
+
+        <h2 id="pickerModalTitle">
+          Random Student Picker
+        </h2>
+
+        <button
+          class="close-modal-button"
+          onclick="closePickerModal()"
+          aria-label="Close"
+        >
+          ×
+        </button>
+
+      </div>
+
+      <p
+        style="
+          text-align:center;
+          color:#666;
+          margin-top:5px;
+        "
+      >
+        Spin the wheel to randomly select a student.
+      </p>
+
+
+      <div class="wheel-card">
+
+        <div class="picker-controls">
+
+          <button
+            class="spin-button"
+            id="spinButton"
+            onclick="spinWheel()"
+          >
+            Pick Student
+          </button>
+
+          <button
+            class="secondary"
+            onclick="resetPickedStudents()"
+          >
+            Reset Picks
+          </button>
+
+          <label class="override-toggle">
+
+            <input
+              type="checkbox"
+              id="noRepeat"
+              checked
+              onchange="drawWheel()"
+            >
+
+            Don't Repeat
+
+          </label>
+
+        </div>
+
+
+        <div class="wheel-container">
+
+          <canvas
+            id="studentWheel"
+            width="600"
+            height="600"
+          ></canvas>
+
+          <div class="wheel-pointer"></div>
+
+        </div>
+
+
+        <div
+          id="winnerDisplay"
+          class="winner-display"
+        >
+          No student selected
+        </div>
+
+        <div
+          id="wheelStatus"
+          class="wheel-status"
+        >
+          Add students to create the wheel.
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <script>
+
+    /* =====================================================
+       ROOM CONFIGURATION
+       ===================================================== */
+
+    const layoutConfig = [
+
+      {
+        id: "l-smartboard",
+        name: "L Smartboard",
+        max: 2,
+        class: "l-smartboard"
+      },
+
+      {
+        id: "r-smartboard",
+        name: "R Smartboard",
+        max: 2,
+        class: "r-smartboard"
+      },
+
+      {
+        id: "easel",
+        name: "Easel",
+        max: 3,
+        class: "easel"
+      },
+
+      {
+        id: "casteel",
+        name: "Casteel",
+        max: 3,
+        class: "casteel"
+      },
+
+      {
+        id: "bird",
+        name: "Bird",
+        max: 3,
+        class: "bird"
+      },
+
+      {
+        id: "printer",
+        name: "Printer",
+        max: 3,
+        class: "printer"
+      },
+
+      {
+        id: "sink",
+        name: "Sink",
+        max: 3,
+        class: "sink"
+      },
+
+      {
+        id: "tv",
+        name: "TV",
+        max: 3,
+        class: "tv"
+      },
+
+      {
+        id: "thermostat",
+        name: "Thermostat",
+        max: 3,
+        class: "thermostat"
+      },
+
+      {
+        id: "b6",
+        name: "6",
+        max: 2,
+        class: "b6"
+      },
+
+      {
+        id: "b5",
+        name: "5",
+        max: 2,
+        class: "b5"
+      },
+
+      {
+        id: "b4",
+        name: "4",
+        max: 2,
+        class: "b4"
+      },
+
+      {
+        id: "b3",
+        name: "3",
+        max: 2,
+        class: "b3"
+      },
+
+      {
+        id: "b2",
+        name: "2",
+        max: 2,
+        class: "b2"
+      },
+
+      {
+        id: "b1",
+        name: "1",
+        max: 2,
+        class: "b1"
+      }
+
+    ];
+
+
+    /* =====================================================
+       PERIOD STORAGE
+       ===================================================== */
+
+    let allPeriodData =
+      JSON.parse(
+        localStorage.getItem(
+          "whiteboardRosters"
+        ) || "{}"
+      );
+
+
+    /* =====================================================
+       WHEEL STATE
+       ===================================================== */
+
+    let pickedStudents = [];
+
+    let currentRotation = 0;
+
+    let wheelSpinning = false;
+
+
+    /* =====================================================
+       PAGE LOAD
+       ===================================================== */
+
+    window.onload = function() {
+
+      loadPeriodRoster();
+
+      renderEmptyLayout();
+
+      drawWheel();
+
+    };
+
+
+    /* =====================================================
+       OPEN MODAL
+       ===================================================== */
+
+    function openPickerModal() {
+
+      const modal =
+        document.getElementById(
+          "pickerModal"
+        );
+
+      modal.classList.add(
+        "open"
+      );
+
+      drawWheel();
+
+      document.body.style.overflow =
+        "hidden";
+
+    }
+
+
+    /* =====================================================
+       CLOSE MODAL
+       ===================================================== */
+
+    function closePickerModal() {
+
+      if (wheelSpinning) {
+        return;
+      }
+
+      const modal =
+        document.getElementById(
+          "pickerModal"
+        );
+
+      modal.classList.remove(
+        "open"
+      );
+
+      document.body.style.overflow =
+        "";
+
+    }
+
+
+    /* =====================================================
+       CLICK OUTSIDE MODAL
+       ===================================================== */
+
+    function handleModalBackgroundClick(
+      event
+    ) {
+
+      if (
+        event.target.id ===
+        "pickerModal"
+      ) {
+
+        closePickerModal();
+
+      }
+
+    }
+
+
+    /* =====================================================
+       ESCAPE KEY
+       ===================================================== */
+
+    document.addEventListener(
+      "keydown",
+      function(event) {
+
+        if (
+          event.key === "Escape"
+        ) {
+
+          closePickerModal();
+
+        }
+
+      }
+    );
+
+
+    /* =====================================================
+       ESCAPE HTML
+       ===================================================== */
+
+    function escapeHtml(text) {
+
+      return String(text)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
+    }
+
+
+    /* =====================================================
+       SHUFFLE
+       ===================================================== */
+
+    function shuffle(array) {
+
+      const copy = [...array];
+
+      for (
+        let i = copy.length - 1;
+        i > 0;
+        i--
+      ) {
+
+        const j =
+          Math.floor(
+            Math.random() *
+            (i + 1)
+          );
+
+        [
+          copy[i],
+          copy[j]
+        ] = [
+          copy[j],
+          copy[i]
+        ];
+
+      }
+
+      return copy;
+
+    }
+
+
+    /* =====================================================
+       GET ACTIVE STUDENTS
+       ===================================================== */
+
+    function getActiveStudents() {
+
+      let students = [];
+
+      const rosterSection =
+        document.getElementById(
+          "rosterSection"
+        );
+
+      if (
+        rosterSection.style.display ===
+        "block"
+      ) {
+
+        document
+          .querySelectorAll(
+            "#rosterList input[type='checkbox']"
+          )
+          .forEach(
+            checkbox => {
+
+              if (checkbox.checked) {
+
+                students.push(
+                  checkbox.value
+                );
+
+              }
+
+            }
+          );
+
+      } else {
+
+        students =
+          document
+            .getElementById(
+              "studentInput"
+            )
+            .value
+            .split(/\r?\n/)
+            .map(
+              name => name.trim()
+            )
+            .filter(
+              name =>
+                name.length > 0
+            );
+
+      }
+
+      return students;
+
+    }
+
+
+    /* =====================================================
+       SAVE PERIOD
+       ===================================================== */
+
+    function savePeriodRoster() {
+
+      const input =
+        document.getElementById(
+          "studentInput"
+        ).value;
+
+      const period =
+        document.getElementById(
+          "periodSelect"
+        ).value;
+
+      const students =
+        input
+          .split(/\r?\n/)
+          .map(
+            name => name.trim()
+          )
+          .filter(
+            name =>
+              name.length > 0
+          );
+
+      if (
+        students.length === 0
+      ) {
+
+        alert(
+          "Please enter some names before saving."
+        );
+
+        return;
+
+      }
+
+      allPeriodData[period] =
+        students;
+
+      localStorage.setItem(
+        "whiteboardRosters",
+        JSON.stringify(
+          allPeriodData
+        )
+      );
+
+      loadPeriodRoster();
+
+      pickedStudents = [];
+
+      drawWheel();
+
+    }
+
+
+    /* =====================================================
+       LOAD PERIOD
+       ===================================================== */
+
+    function loadPeriodRoster() {
+
+      const period =
+        document.getElementById(
+          "periodSelect"
+        ).value;
+
+      const rosterSection =
+        document.getElementById(
+          "rosterSection"
+        );
+
+      const rosterList =
+        document.getElementById(
+          "rosterList"
+        );
+
+      const textarea =
+        document.getElementById(
+          "studentInput"
+        );
+
+      const students =
+        allPeriodData[period] || [];
+
+      rosterList.innerHTML = "";
+
+      if (
+        students.length === 0
+      ) {
+
+        textarea.value = "";
+
+        rosterSection.style.display =
+          "none";
+
+        pickedStudents = [];
+
+        drawWheel();
+
+        return;
+
+      }
+
+      textarea.value =
+        students.join("\n");
+
+      rosterSection.style.display =
+        "block";
+
+      students.forEach(
+        (student, index) => {
+
+          const item =
+            document.createElement(
+              "div"
+            );
+
+          item.className =
+            "roster-item";
+
+          const checkbox =
+            document.createElement(
+              "input"
+            );
+
+          checkbox.type =
+            "checkbox";
+
+          checkbox.checked =
+            true;
+
+          checkbox.value =
+            student;
+
+          checkbox.id =
+            `student-${period}-${index}`;
+
+          checkbox.addEventListener(
+            "change",
+            drawWheel
+          );
+
+          const label =
+            document.createElement(
+              "label"
+            );
+
+          label.htmlFor =
+            checkbox.id;
+
+          label.textContent =
+            student;
+
+          item.appendChild(
+            checkbox
+          );
+
+          item.appendChild(
+            label
+          );
+
+          rosterList.appendChild(
+            item
+          );
+
+        }
+      );
+
+      drawWheel();
+
+    }
+
+
+    /* =====================================================
+       CREATE BOARD HTML
+       ===================================================== */
+
+    function createBoardHtml(
+      cell,
+      students = []
+    ) {
+
+      let html = `
+
+        <div
+          id="board-${cell.id}"
+          class="board ${cell.class}"
+          data-max="${cell.max}"
+        >
+
+          <h3>
+            ${escapeHtml(cell.name)}
+
+            <span class="limit">
+              (MAX ${cell.max})
+            </span>
+          </h3>
+
+          <ul
+            id="list-${cell.id}"
+            ondragover="allowDrop(event)"
+            ondragleave="dragLeave(event)"
+            ondrop="drop(event)"
+          >
+
+      `;
+
+      students.forEach(
+        (student, index) => {
+
+          const uniqueId =
+            `student-${cell.id}-${index}-${Math.random()
+              .toString(36)
+              .substring(2, 8)}`;
+
+          html += `
+
+            <li
+              id="${uniqueId}"
+              draggable="true"
+              ondragstart="drag(event)"
+            >
+              ${escapeHtml(student)}
+            </li>
+
+          `;
+
+        }
+      );
+
+      html += `
+
+          </ul>
+
+        </div>
+
+      `;
+
+      return html;
+
+    }
+
+
+    /* =====================================================
+       EMPTY ROOM
+       ===================================================== */
+
+    function renderEmptyLayout() {
+
+      const results =
+        document.getElementById(
+          "results"
+        );
+
+      let html = `
+
+        <div class="card">
+
+          <h3>
+            Room Layout Grouping:
+          </h3>
+
+          <div class="classroom-grid">
+
+      `;
+
+      layoutConfig.forEach(
+        cell => {
+
+          html +=
+            createBoardHtml(
+              cell
+            );
+
+        }
+      );
+
+      html += `
+
+          </div>
+
+        </div>
+
+      `;
+
+      results.innerHTML =
+        html;
+
+    }
+
+
+    /* =====================================================
+       FIND BOARD COMBINATIONS
+       ===================================================== */
+
+    function getBoardCombinations(
+      boards,
+      count
+    ) {
+
+      const results = [];
+
+      function generate(
+        start,
+        current
+      ) {
+
+        if (
+          current.length ===
+          count
+        ) {
+
+          results.push(
+            [...current]
+          );
+
+          return;
+
+        }
+
+        for (
+          let i = start;
+          i < boards.length;
+          i++
+        ) {
+
+          current.push(
+            boards[i]
+          );
+
+          generate(
+            i + 1,
+            current
+          );
+
+          current.pop();
+
+        }
+
+      }
+
+      generate(0, []);
+
+      return results;
+
+    }
+
+
+    /* =====================================================
+       SPLIT GROUPS
+       ===================================================== */
+
+    function splitGroups() {
+
+      document.getElementById(
+        "errorMsg"
+      ).innerText = "";
+
+      const activeStudents =
+        getActiveStudents();
+
+      const studentCount =
+        activeStudents.length;
+
+      const override =
+        document.getElementById(
+          "overrideCapacity"
+        ).checked;
+
+      if (
+        studentCount < 2
+      ) {
+
+        document.getElementById(
+          "errorMsg"
+        ).innerText =
+          "You need at least 2 students to make a group.";
+
+        return;
+
+      }
+
+      const activeBoards =
+        layoutConfig.filter(
+          board =>
+            board.type !==
+            "empty"
+        );
+
+
+      /* ===================================================
+         NORMAL MODE
+         =================================================== */
+
+      if (!override) {
+
+        let selectedBoards = null;
+
+        for (
+          let count = 1;
+          count <= activeBoards.length;
+          count++
+        ) {
+
+          const boards =
+            activeBoards.slice(
+              0,
+              count
+            );
+
+          const capacity =
+            boards.reduce(
+              (total, board) =>
+                total + board.max,
+              0
+            );
+
+          if (
+            studentCount >= count * 2 &&
+            studentCount <= capacity
+          ) {
+
+            selectedBoards =
+              boards;
+
+            break;
+
+          }
+
+        }
+
+
+        if (!selectedBoards) {
+
+          for (
+            let count = 1;
+            count <= activeBoards.length;
+            count++
+          ) {
+
+            const combinations =
+              getBoardCombinations(
+                activeBoards,
+                count
+              );
+
+            for (
+              const combination
+              of combinations
+            ) {
+
+              const capacity =
+                combination.reduce(
+                  (total, board) =>
+                    total + board.max,
+                  0
+                );
+
+              if (
+                studentCount >= count * 2 &&
+                studentCount <= capacity
+              ) {
+
+                selectedBoards =
+                  combination.sort(
+                    (a, b) =>
+                      activeBoards.indexOf(a) -
+                      activeBoards.indexOf(b)
+                  );
+
+                break;
+
+              }
+
+            }
+
+            if (selectedBoards) {
+              break;
+            }
+
+          }
+
+        }
+
+
+        if (!selectedBoards) {
+
+          const totalCapacity =
+            activeBoards.reduce(
+              (total, board) =>
+                total + board.max,
+              0
+            );
+
+          document.getElementById(
+            "errorMsg"
+          ).innerText =
+            `Cannot fit ${studentCount} students. ` +
+            `The room has ${totalCapacity} total seats. ` +
+            `Enable "Override capacity" to continue.`;
+
+          return;
+
+        }
+
+
+        const students =
+          shuffle(
+            activeStudents
+          );
+
+        const groupSizes =
+          new Array(
+            selectedBoards.length
+          ).fill(2);
+
+        let remaining =
+          studentCount -
+          selectedBoards.length * 2;
+
+
+        while (
+          remaining > 0
+        ) {
+
+          let added =
+            false;
+
+          for (
+            let i = 0;
+            i < selectedBoards.length;
+            i++
+          ) {
+
+            if (
+              groupSizes[i] <
+              selectedBoards[i].max
+            ) {
+
+              groupSizes[i]++;
+
+              remaining--;
+
+              added = true;
+
+              if (
+                remaining === 0
+              ) {
+
+                break;
+
+              }
+
+            }
+
+          }
+
+          if (!added) {
+            break;
+          }
+
+        }
+
+
+        const boardsData = {};
+
+        activeBoards.forEach(
+          board => {
+
+            boardsData[
+              board.id
+            ] = [];
+
+          }
+        );
+
+
+        let studentIndex = 0;
+
+        selectedBoards.forEach(
+          (board, groupIndex) => {
+
+            for (
+              let i = 0;
+              i < groupSizes[groupIndex];
+              i++
+            ) {
+
+              boardsData[
+                board.id
+              ].push(
+                students[
+                  studentIndex
+                ]
+              );
+
+              studentIndex++;
+
+            }
+
+          }
+        );
+
+
+        renderGroups(
+          boardsData
+        );
+
+        return;
+
+      }
+
+
+      /* ===================================================
+         OVERRIDE MODE
+         =================================================== */
+
+      const students =
+        shuffle(
+          activeStudents
+        );
+
+      let groupCount =
+        Math.ceil(
+          studentCount / 3
+        );
+
+      groupCount =
+        Math.min(
+          groupCount,
+          activeBoards.length
+        );
+
+      if (
+        studentCount <
+        groupCount * 2
+      ) {
+
+        groupCount =
+          Math.floor(
+            studentCount / 2
+          );
+
+      }
+
+
+      const selectedBoards =
+        activeBoards.slice(
+          0,
+          groupCount
+        );
+
+      const groupSizes =
+        new Array(
+          groupCount
+        ).fill(2);
+
+      let remaining =
+        studentCount -
+        groupCount * 2;
+
+      let position = 0;
+
+      while (
+        remaining > 0
+      ) {
+
+        groupSizes[position]++;
+
+        remaining--;
+
+        position++;
+
+        if (
+          position >= groupCount
+        ) {
+
+          position = 0;
+
+        }
+
+      }
+
+
+      const boardsData = {};
+
+      activeBoards.forEach(
+        board => {
+
+          boardsData[
+            board.id
+          ] = [];
+
+        }
+      );
+
+
+      let studentIndex = 0;
+
+      selectedBoards.forEach(
+        (board, groupIndex) => {
+
+          for (
+            let i = 0;
+            i < groupSizes[groupIndex];
+            i++
+          ) {
+
+            boardsData[
+              board.id
+            ].push(
+              students[
+                studentIndex
+              ]
+            );
+
+            studentIndex++;
+
+          }
+
+        }
+      );
+
+
+      renderGroups(
+        boardsData
+      );
+
+    }
+
+
+    /* =====================================================
+       RENDER GROUPS
+       ===================================================== */
+
+    function renderGroups(
+      boardsData
+    ) {
+
+      let html = `
+
+        <div class="card">
+
+          <h3>
+            Room Layout Grouping:
+          </h3>
+
+          <div class="classroom-grid">
+
+      `;
+
+      layoutConfig.forEach(
+        cell => {
+
+          html +=
+            createBoardHtml(
+              cell,
+              boardsData[
+                cell.id
+              ] || []
+            );
+
+        }
+      );
+
+      html += `
+
+          </div>
+
+        </div>
+
+      `;
+
+      document.getElementById(
+        "results"
+      ).innerHTML =
+        html;
+
+      checkAllLimits();
+
+    }
+
+
+    /* =====================================================
+       DRAG
+       ===================================================== */
+
+    function drag(ev) {
+
+      ev.dataTransfer.setData(
+        "text/plain",
+        ev.target.id
+      );
+
+      ev.dataTransfer.effectAllowed =
+        "move";
+
+    }
+
+
+    /* =====================================================
+       ALLOW DROP
+       ===================================================== */
+
+    function allowDrop(ev) {
+
+      ev.preventDefault();
+
+      const board =
+        ev.target.closest(
+          ".board"
+        );
+
+      if (!board) {
+        return;
+      }
+
+      board.classList.add(
+        "drag-over"
+      );
+
+    }
+
+
+    /* =====================================================
+       DRAG LEAVE
+       ===================================================== */
+
+    function dragLeave(ev) {
+
+      const board =
+        ev.target.closest(
+          ".board"
+        );
+
+      if (board) {
+
+        board.classList.remove(
+          "drag-over"
+        );
+
+      }
+
+    }
+
+
+    /* =====================================================
+       DROP
+       ===================================================== */
+
+    function drop(ev) {
+
+      ev.preventDefault();
+
+      const board =
+        ev.target.closest(
+          ".board"
+        );
+
+      if (!board) {
+        return;
+      }
+
+      board.classList.remove(
+        "drag-over"
+      );
+
+      const studentId =
+        ev.dataTransfer.getData(
+          "text/plain"
+        );
+
+      const student =
+        document.getElementById(
+          studentId
+        );
+
+      if (!student) {
+        return;
+      }
+
+      const list =
+        board.querySelector(
+          "ul"
+        );
+
+      const max =
+        parseInt(
+          board.dataset.max,
+          10
+        );
+
+      const currentCount =
+        list.querySelectorAll(
+          "li"
+        ).length;
+
+      const override =
+        document.getElementById(
+          "overrideCapacity"
+        ).checked;
+
+      if (
+        !override &&
+        student.parentElement !== list &&
+        currentCount >= max
+      ) {
+
+        board.classList.add(
+          "over-limit"
+        );
+
+        return;
+
+      }
+
+      list.appendChild(
+        student
+      );
+
+      checkAllLimits();
+
+    }
+
+
+    /* =====================================================
+       CHECK BOARD LIMITS
+       ===================================================== */
+
+    function checkAllLimits() {
+
+      document
+        .querySelectorAll(
+          ".board"
+        )
+        .forEach(
+          board => {
+
+            const max =
+              parseInt(
+                board.dataset.max,
+                10
+              );
+
+            const currentCount =
+              board.querySelectorAll(
+                "ul li"
+              ).length;
+
+            if (
+              currentCount > max
+            ) {
+
+              board.classList.add(
+                "over-limit"
+              );
+
+            } else {
+
+              board.classList.remove(
+                "over-limit"
+              );
+
+            }
+
+          }
+        );
+
+    }
+
+
+    /* =====================================================
+       DRAW WHEEL
+       ===================================================== */
+
+    function drawWheel() {
+
+      const canvas =
+        document.getElementById(
+          "studentWheel"
+        );
+
+      if (!canvas) {
+        return;
+      }
+
+      const ctx =
+        canvas.getContext(
+          "2d"
+        );
+
+      const noRepeat =
+        document.getElementById(
+          "noRepeat"
+        ).checked;
+
+      let students =
+        getActiveStudents();
+
+
+      if (noRepeat) {
+
+        students =
+          students.filter(
+            student =>
+              !pickedStudents.includes(
+                student
+              )
+          );
+
+      }
+
+
+      const center =
+        canvas.width / 2;
+
+      const radius =
+        canvas.width / 2 - 8;
+
+
+      ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+
+
+      /* =================================================
+         NO STUDENTS
+         ================================================= */
+
+      if (
+        students.length === 0
+      ) {
+
+        ctx.beginPath();
+
+        ctx.arc(
+          center,
+          center,
+          radius,
+          0,
+          Math.PI * 2
+        );
+
+        ctx.fillStyle =
+          "#eeeeee";
+
+        ctx.fill();
+
+        ctx.strokeStyle =
+          "#999";
+
+        ctx.lineWidth = 4;
+
+        ctx.stroke();
+
+        ctx.fillStyle =
+          "#666";
+
+        ctx.font =
+          "bold 24px Arial";
+
+        ctx.textAlign =
+          "center";
+
+        ctx.textBaseline =
+          "middle";
+
+        ctx.fillText(
+          "No students",
+          center,
+          center
+        );
+
+        document.getElementById(
+          "wheelStatus"
+        ).innerText =
+          "Add students to create the wheel.";
+
+        return;
+
+      }
+
+
+      const slice =
+        (Math.PI * 2) /
+        students.length;
+
+      const startOffset =
+        -Math.PI / 2;
+
+
+      students.forEach(
+        (student, index) => {
+
+          const start =
+            startOffset +
+            index * slice;
+
+          const end =
+            start + slice;
+
+          const hue =
+            (index * 47) % 360;
+
+
+          ctx.beginPath();
+
+          ctx.moveTo(
+            center,
+            center
+          );
+
+          ctx.arc(
+            center,
+            center,
+            radius,
+            start,
+            end
+          );
+
+          ctx.closePath();
+
+
+          ctx.fillStyle =
+            `hsl(${hue}, 75%, 72%)`;
+
+          ctx.fill();
+
+
+          ctx.strokeStyle =
+            "#ffffff";
+
+          ctx.lineWidth = 3;
+
+          ctx.stroke();
+
+
+          ctx.save();
+
+          ctx.translate(
+            center,
+            center
+          );
+
+          const middle =
+            start +
+            slice / 2;
+
+          ctx.rotate(
+            middle
+          );
+
+          ctx.fillStyle =
+            "#222";
+
+          ctx.font =
+            students.length > 25
+              ? "10px Arial"
+              : students.length > 15
+                ? "12px Arial"
+                : "14px Arial";
+
+          ctx.textAlign =
+            "right";
+
+          ctx.textBaseline =
+            "middle";
+
+
+          let displayName =
+            student;
+
+          if (
+            displayName.length > 18
+          ) {
+
+            displayName =
+              displayName.substring(
+                0,
+                17
+              ) + "…";
+
+          }
+
+
+          ctx.fillText(
+            displayName,
+            radius - 15,
+            0
+          );
+
+          ctx.restore();
+
+        }
+      );
+
+
+      /* =================================================
+         CENTER CIRCLE
+         ================================================= */
+
+      ctx.beginPath();
+
+      ctx.arc(
+        center,
+        center,
+        35,
+        0,
+        Math.PI * 2
+      );
+
+      ctx.fillStyle =
+        "#ffffff";
+
+      ctx.fill();
+
+      ctx.strokeStyle =
+        "#444";
+
+      ctx.lineWidth = 3;
+
+      ctx.stroke();
+
+      ctx.fillStyle =
+        "#333";
+
+      ctx.font =
+        "bold 14px Arial";
+
+      ctx.textAlign =
+        "center";
+
+      ctx.textBaseline =
+        "middle";
+
+      ctx.fillText(
+        "SPIN",
+        center,
+        center
+      );
+
+
+      document.getElementById(
+        "wheelStatus"
+      ).innerText =
+        `${students.length} student${
+          students.length === 1
+            ? ""
+            : "s"
+        } available`;
+
+    }
+
+
+    /* =====================================================
+       SPIN WHEEL
+       ===================================================== */
+
+    function spinWheel() {
+
+      if (wheelSpinning) {
+        return;
+      }
+
+
+      const wheel =
+        document.getElementById(
+          "studentWheel"
+        );
+
+      const button =
+        document.getElementById(
+          "spinButton"
+        );
+
+      const noRepeat =
+        document.getElementById(
+          "noRepeat"
+        ).checked;
+
+
+      let students =
+        getActiveStudents();
+
+
+      /* ================================================
+         REMOVE PREVIOUS PICKS
+         ================================================ */
+
+      if (noRepeat) {
+
+        students =
+          students.filter(
+            student =>
+              !pickedStudents.includes(
+                student
+              )
+          );
+
+      }
+
+
+      /* ================================================
+         EVERYONE HAS BEEN PICKED
+         ================================================ */
+
+      if (
+        students.length === 0
+      ) {
+
+        document.getElementById(
+          "winnerDisplay"
+        ).innerText =
+          "Everyone has been picked.";
+
+        document.getElementById(
+          "wheelStatus"
+        ).innerText =
+          "Press Reset Picks to start again.";
+
+        return;
+
+      }
+
+
+      /* ================================================
+         RANDOM SELECTION
+         ================================================ */
+
+      const weights =
+        students.map(
+          student => {
+
+            if (
+              student
+                .toLowerCase()
+                .includes("alejandro")
+            ) {
+
+              return 0.2;
+
+            }
+
+            return 1.00;
+
+          }
+        );
+
+
+      const totalWeight =
+        weights.reduce(
+          (total, weight) =>
+            total + weight,
+          0
+        );
+
+
+      let randomValue =
+        Math.random() *
+        totalWeight;
+
+
+      let winnerIndex = 0;
+
+
+      for (
+        let i = 0;
+        i < students.length;
+        i++
+      ) {
+
+        randomValue -=
+          weights[i];
+
+        if (
+          randomValue <= 0
+        ) {
+
+          winnerIndex = i;
+
+          break;
+
+        }
+
+      }
+
+
+      /* ================================================
+         WHEEL ROTATION
+         ================================================ */
+
+      const slice =
+        360 /
+        students.length;
+
+
+      const selectedCenter =
+        winnerIndex * slice +
+        slice / 2;
+
+
+      const extraSpins =
+        360 * (
+          6 +
+          Math.floor(
+            Math.random() * 3
+          )
+        );
+
+
+      const currentMod =
+        (
+          (
+            currentRotation %
+            360
+          ) + 360
+        ) % 360;
+
+
+      const desiredRotation =
+        extraSpins +
+        (360 - selectedCenter);
+
+
+      currentRotation +=
+        desiredRotation -
+        currentMod;
+
+
+      wheelSpinning =
+        true;
+
+
+      button.disabled =
+        true;
+
+      button.style.opacity =
+        "0.6";
+
+
+      wheel.style.transition =
+        "transform 5s cubic-bezier(0.15, 0.9, 0.2, 1)";
+
+
+      wheel.style.transform =
+        `rotate(${currentRotation}deg)`;
+
+
+      document.getElementById(
+        "winnerDisplay"
+      ).innerText =
+        "Spinning...";
+
+
+      document.getElementById(
+        "wheelStatus"
+      ).innerText =
+        "Choosing a student...";
+
+
+      /* ================================================
+         FINISH ANIMATION
+         ================================================ */
+
+      setTimeout(
+        () => {
+
+          const selected =
+            students[winnerIndex];
+
+
+          document.getElementById(
+            "winnerDisplay"
+          ).innerText =
+            selected;
+
+
+          /* ==========================================
+             ADD TO NO-REPEAT HISTORY
+             ========================================== */
+
+          if (
+            noRepeat &&
+            !pickedStudents.includes(
+              selected
+            )
+          ) {
+
+            pickedStudents.push(
+              selected
+            );
+
+          }
+
+
+          wheelSpinning =
+            false;
+
+
+          button.disabled =
+            false;
+
+          button.style.opacity =
+            "1";
+
+
+          drawWheel();
+
+        },
+        5100
+      );
+
+    }
+
+
+    /* =====================================================
+       RESET PICKS
+       ===================================================== */
+
+    function resetPickedStudents() {
+
+      pickedStudents = [];
+
+      document.getElementById(
+        "winnerDisplay"
+      ).innerText =
+        "No student selected";
+
+      drawWheel();
+
+    }
+
+  </script>
+
+</body>
+
+</html>
