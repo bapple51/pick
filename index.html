@@ -1677,29 +1677,28 @@
       if (studentCount < 2) {
         document.getElementById("errorMsg").innerText =
           "You need at least 2 students to make a group.";
+    
         return;
       }
     
-      /*
-       * =====================================================
-       * SEPARATE BOARDS BY CAPACITY
-       *
-       * MAX 2 boards are always prioritized first.
-       * MAX 3 boards are used after that.
-       * =====================================================
-       */
     
-      const max2Boards = layoutConfig.filter(
-        board => board.max === 2
-      );
+      /* =====================================================
+         BOARD PRIORITY
     
-      const max3Boards = layoutConfig.filter(
-        board => board.max === 3
-      );
+         MAX 2 boards first.
+         MAX 3 boards second.
+         ===================================================== */
     
-      /*
-       * MAX 2 boards first, then MAX 3 boards.
-       */
+      const max2Boards =
+        layoutConfig.filter(
+          board => board.max === 2
+        );
+    
+      const max3Boards =
+        layoutConfig.filter(
+          board => board.max === 3
+        );
+    
       const prioritizedBoards = [
         ...max2Boards,
         ...max3Boards
@@ -1713,24 +1712,43 @@
       if (!override) {
     
         /*
-         * Find the smallest number of boards that
-         * can hold everyone.
+         * We want to use AS MANY BOARDS AS POSSIBLE.
          *
-         * Because prioritizedBoards has all MAX 2
-         * boards first, they will be selected first.
+         * A board requires at least 2 students.
+         *
+         * Therefore:
+         *
+         * maximum possible groups =
+         * floor(students / 2)
+         *
+         * but we cannot exceed the number of boards.
+         */
+    
+        let groupCount =
+          Math.min(
+            Math.floor(studentCount / 2),
+            prioritizedBoards.length
+          );
+    
+    
+        /*
+         * Find the largest number of groups that
+         * can actually hold everyone.
+         *
+         * Start with the maximum and decrease
+         * only if necessary.
          */
     
         let selectedBoards = null;
     
-        for (
-          let groupCount = 1;
-          groupCount <= prioritizedBoards.length;
-          groupCount++
+        while (
+          groupCount >= 1
         ) {
     
           /*
-           * Instead of testing every combination,
-           * test the first boards in priority order.
+           * Try using the first boards in priority order.
+           *
+           * MAX 2 boards come first.
            */
     
           const boards =
@@ -1739,15 +1757,11 @@
               groupCount
             );
     
-          /*
-           * Every group needs at least 2 students.
-           */
+    
           const minimumCapacity =
             groupCount * 2;
     
-          /*
-           * Calculate actual maximum capacity.
-           */
+    
           const maximumCapacity =
             boards.reduce(
               (total, board) =>
@@ -1755,30 +1769,49 @@
               0
             );
     
+    
+          /*
+           * Can these boards hold everyone?
+           */
+    
           if (
             studentCount >= minimumCapacity &&
             studentCount <= maximumCapacity
           ) {
     
             selectedBoards = boards;
+    
             break;
           }
+    
+    
+          /*
+           * If not, use one fewer group.
+           */
+    
+          groupCount--;
+    
         }
     
     
         /*
-         * If the simple priority order cannot fit,
-         * find ANY valid combination.
-         *
-         * This protects against unusual student counts.
+         * If the priority boards couldn't make
+         * the arrangement work, search for another
+         * valid combination with the SAME group count.
          */
     
         if (!selectedBoards) {
     
-          for (
-            let groupCount = 1;
-            groupCount <= prioritizedBoards.length;
-            groupCount++
+          groupCount =
+            Math.min(
+              Math.floor(studentCount / 2),
+              prioritizedBoards.length
+            );
+    
+    
+          while (
+            groupCount >= 1 &&
+            !selectedBoards
           ) {
     
             const combinations =
@@ -1787,57 +1820,72 @@
                 groupCount
               );
     
+    
+            /*
+             * Sort combinations so ones containing
+             * more MAX-2 boards are preferred.
+             */
+    
+            combinations.sort(
+              (a, b) => {
+    
+                const aMax2 =
+                  a.filter(
+                    board => board.max === 2
+                  ).length;
+    
+                const bMax2 =
+                  b.filter(
+                    board => board.max === 2
+                  ).length;
+    
+                return bMax2 - aMax2;
+    
+              }
+            );
+    
+    
             for (
               const combination of combinations
             ) {
     
-              const minimumCapacity =
-                groupCount * 2;
-    
-              const maximumCapacity =
+              const capacity =
                 combination.reduce(
                   (total, board) =>
                     total + board.max,
                   0
                 );
     
+    
               if (
-                studentCount >= minimumCapacity &&
-                studentCount <= maximumCapacity
+                studentCount >= groupCount * 2 &&
+                studentCount <= capacity
               ) {
     
-                /*
-                 * Sort the selected boards so
-                 * MAX 2 boards always appear first.
-                 */
                 selectedBoards =
                   combination.sort(
-                    (a, b) => {
-    
-                      if (a.max !== b.max) {
-                        return a.max - b.max;
-                      }
-    
-                      return (
-                        prioritizedBoards.indexOf(a) -
-                        prioritizedBoards.indexOf(b)
-                      );
-                    }
+                    (a, b) =>
+                      prioritizedBoards.indexOf(a) -
+                      prioritizedBoards.indexOf(b)
                   );
     
                 break;
               }
+    
             }
     
-            if (selectedBoards) {
-              break;
+    
+            if (!selectedBoards) {
+              groupCount--;
             }
+    
           }
+    
         }
     
     
         /*
-         * No possible arrangement.
+         * No valid arrangement.
          */
     
         if (!selectedBoards) {
@@ -1849,7 +1897,10 @@
               0
             );
     
-          document.getElementById("errorMsg").innerText =
+    
+          document.getElementById(
+            "errorMsg"
+          ).innerText =
             `Cannot fit ${studentCount} students. ` +
             `The room has ${totalCapacity} total seats. ` +
             `Enable "Override capacity" to continue.`;
@@ -1858,41 +1909,48 @@
         }
     
     
-        /*
-         * Shuffle students.
-         */
+        /* =====================================================
+           SHUFFLE STUDENTS
+           ===================================================== */
     
         const students =
           shuffle(activeStudents);
     
     
-        /*
-         * =====================================================
-         * GROUP SIZES
-         *
-         * First give every group 2 students.
-         * Then use spare capacity.
-         *
-         * MAX 2 boards cannot receive a third student,
-         * so once they are full, MAX 3 boards get the extras.
-         * =====================================================
-         */
+        /* =====================================================
+           INITIAL GROUP SIZES
+           
+           Every group starts with 2.
+           ===================================================== */
     
         const groupSizes =
           new Array(
             selectedBoards.length
           ).fill(2);
     
+    
         let remaining =
           studentCount -
           selectedBoards.length * 2;
     
     
-        /*
-         * Fill MAX 3 groups from 2 -> 3.
-         *
-         * MAX 2 groups stay at exactly 2.
-         */
+        /* =====================================================
+           FILL MAX-3 BOARDS TO 3
+           
+           MAX-2 boards stay at 2.
+           
+           This gives results like:
+           
+           12:
+           2 + 2 + 2 + 2 + 2 + 2
+           
+           13:
+           2 + 2 + 2 + 2 + 2 + 2 + 3
+           
+           33:
+           2 + 2 + 2 + 2 + 2 + 2
+           + 3 + 3 + 3 + 3 + 3 + 3 + 3 + 3 + 3
+           ===================================================== */
     
         for (
           let i = 0;
@@ -1908,20 +1966,25 @@
             groupSizes[i] = 3;
     
             remaining--;
+    
           }
+    
         }
     
     
-        /*
-         * If any students are still remaining,
-         * use any remaining board capacity.
-         */
+        /* =====================================================
+           EXTRA CAPACITY
+           
+           This is mainly a safety fallback for future boards
+           with MAX values greater than 3.
+           ===================================================== */
     
         while (
           remaining > 0
         ) {
     
           let added = false;
+    
     
           for (
             let i = 0;
@@ -1940,57 +2003,73 @@
     
               added = true;
     
+    
               if (
                 remaining === 0
               ) {
                 break;
               }
+    
             }
+    
           }
     
+    
           /*
-           * Safety check.
+           * Prevent infinite loops.
            */
+    
           if (!added) {
             break;
           }
+    
         }
     
     
-        /*
-         * =====================================================
-         * CREATE BOARD DATA
-         * =====================================================
-         */
+        /* =====================================================
+           CREATE EMPTY BOARD DATA
+           ===================================================== */
     
         const boardsData = {};
+    
     
         layoutConfig.forEach(
           board => {
     
-            boardsData[board.id] = [];
+            boardsData[
+              board.id
+            ] = [];
     
           }
         );
     
     
-        /*
-         * Assign students.
-         */
+        /* =====================================================
+           ASSIGN STUDENTS
+           ===================================================== */
     
         let studentIndex = 0;
+    
     
         selectedBoards.forEach(
           (board, groupIndex) => {
     
+            const size =
+              groupSizes[groupIndex];
+    
+    
             for (
               let i = 0;
-              i < groupSizes[groupIndex];
+              i < size;
               i++
             ) {
     
-              boardsData[board.id].push(
-                students[studentIndex]
+              boardsData[
+                board.id
+              ].push(
+                students[
+                  studentIndex
+                ]
               );
     
               studentIndex++;
@@ -2011,6 +2090,9 @@
     
       /* =====================================================
          OVERRIDE MODE
+         
+         Override also tries to maximize the number
+         of used groups.
          ===================================================== */
     
       const students =
@@ -2018,54 +2100,18 @@
     
     
       /*
-       * Still prioritize MAX 2 boards.
+       * Maximum possible groups based on 2 per group.
        */
     
       let groupCount =
-        Math.ceil(
-          studentCount / 3
-        );
-    
-    
-      /*
-       * Don't use more physical boards
-       * than actually exist.
-       */
-    
-      groupCount =
         Math.min(
-          groupCount,
+          Math.floor(studentCount / 2),
           prioritizedBoards.length
         );
     
     
       /*
-       * Every group needs at least 2.
-       */
-    
-      if (
-        studentCount <
-        groupCount * 2
-      ) {
-    
-        groupCount =
-          Math.floor(
-            studentCount / 2
-          );
-      }
-    
-    
-      if (
-        groupCount < 1
-      ) {
-    
-        groupCount = 1;
-    
-      }
-    
-    
-      /*
-       * Use MAX 2 boards first.
+       * Select the highest-priority boards.
        */
     
       const selectedBoards =
@@ -2091,9 +2137,7 @@
     
     
       /*
-       * Fill MAX 3 boards to 3 first.
-       *
-       * MAX 2 boards remain at 2.
+       * Fill MAX-3 boards to 3 first.
        */
     
       for (
@@ -2110,17 +2154,21 @@
           groupSizes[i]++;
     
           remaining--;
+    
         }
+    
       }
     
     
       /*
-       * Override allows groups to exceed MAX.
+       * Override allows additional students
+       * beyond the normal MAX.
        *
-       * Distribute remaining students evenly.
+       * Distribute them evenly.
        */
     
       let position = 0;
+    
     
       while (
         remaining > 0
@@ -2132,6 +2180,7 @@
     
         position++;
     
+    
         if (
           position >= groupCount
         ) {
@@ -2139,31 +2188,34 @@
           position = 0;
     
         }
+    
       }
     
     
-      /*
-       * =====================================================
-       * CREATE BOARD DATA
-       * =====================================================
-       */
+      /* =====================================================
+         CREATE BOARD DATA
+         ===================================================== */
     
       const boardsData = {};
+    
     
       layoutConfig.forEach(
         board => {
     
-          boardsData[board.id] = [];
+          boardsData[
+            board.id
+          ] = [];
     
         }
       );
     
     
-      /*
-       * Assign students.
-       */
+      /* =====================================================
+         ASSIGN STUDENTS
+         ===================================================== */
     
       let studentIndex = 0;
+    
     
       selectedBoards.forEach(
         (board, groupIndex) => {
@@ -2174,8 +2226,12 @@
             i++
           ) {
     
-            boardsData[board.id].push(
-              students[studentIndex]
+            boardsData[
+              board.id
+            ].push(
+              students[
+                studentIndex
+              ]
             );
     
             studentIndex++;
