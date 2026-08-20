@@ -1447,7 +1447,7 @@
             student;
 
           checkbox.id =
-            `student-${period}-${index}`;
+            `student-period-{index}`;
 
           checkbox.addEventListener(
             "change",
@@ -1523,7 +1523,7 @@
         (student, index) => {
 
           const uniqueId =
-            `student-${cell.id}-${index}-${Math.random()
+            `student-cell.id-{index}-${Math.random()
               .toString(36)
               .substring(2, 8)}`;
 
@@ -1665,383 +1665,531 @@
        ===================================================== */
 
     function splitGroups() {
-
-      document.getElementById(
-        "errorMsg"
-      ).innerText = "";
-
-      const activeStudents =
-        getActiveStudents();
-
-      const studentCount =
-        activeStudents.length;
-
+    
+      document.getElementById("errorMsg").innerText = "";
+    
+      const activeStudents = getActiveStudents();
+      const studentCount = activeStudents.length;
+    
       const override =
-        document.getElementById(
-          "overrideCapacity"
-        ).checked;
-
-      if (
-        studentCount < 2
-      ) {
-
-        document.getElementById(
-          "errorMsg"
-        ).innerText =
+        document.getElementById("overrideCapacity").checked;
+    
+      if (studentCount < 2) {
+        document.getElementById("errorMsg").innerText =
           "You need at least 2 students to make a group.";
-
         return;
-
       }
-
-      const activeBoards =
-        layoutConfig.filter(
-          board =>
-            board.type !==
-            "empty"
-        );
-
-
-      /* ===================================================
+    
+      /*
+       * =====================================================
+       * SEPARATE BOARDS BY CAPACITY
+       *
+       * MAX 2 boards are always prioritized first.
+       * MAX 3 boards are used after that.
+       * =====================================================
+       */
+    
+      const max2Boards = layoutConfig.filter(
+        board => board.max === 2
+      );
+    
+      const max3Boards = layoutConfig.filter(
+        board => board.max === 3
+      );
+    
+      /*
+       * MAX 2 boards first, then MAX 3 boards.
+       */
+      const prioritizedBoards = [
+        ...max2Boards,
+        ...max3Boards
+      ];
+    
+    
+      /* =====================================================
          NORMAL MODE
-         =================================================== */
-
+         ===================================================== */
+    
       if (!override) {
-
+    
+        /*
+         * Find the smallest number of boards that
+         * can hold everyone.
+         *
+         * Because prioritizedBoards has all MAX 2
+         * boards first, they will be selected first.
+         */
+    
         let selectedBoards = null;
-
+    
         for (
-          let count = 1;
-          count <= activeBoards.length;
-          count++
+          let groupCount = 1;
+          groupCount <= prioritizedBoards.length;
+          groupCount++
         ) {
-
+    
+          /*
+           * Instead of testing every combination,
+           * test the first boards in priority order.
+           */
+    
           const boards =
-            activeBoards.slice(
+            prioritizedBoards.slice(
               0,
-              count
+              groupCount
             );
-
-          const capacity =
+    
+          /*
+           * Every group needs at least 2 students.
+           */
+          const minimumCapacity =
+            groupCount * 2;
+    
+          /*
+           * Calculate actual maximum capacity.
+           */
+          const maximumCapacity =
             boards.reduce(
               (total, board) =>
                 total + board.max,
               0
             );
-
+    
           if (
-            studentCount >= count * 2 &&
-            studentCount <= capacity
+            studentCount >= minimumCapacity &&
+            studentCount <= maximumCapacity
           ) {
-
-            selectedBoards =
-              boards;
-
+    
+            selectedBoards = boards;
             break;
-
           }
-
         }
-
-
+    
+    
+        /*
+         * If the simple priority order cannot fit,
+         * find ANY valid combination.
+         *
+         * This protects against unusual student counts.
+         */
+    
         if (!selectedBoards) {
-
+    
           for (
-            let count = 1;
-            count <= activeBoards.length;
-            count++
+            let groupCount = 1;
+            groupCount <= prioritizedBoards.length;
+            groupCount++
           ) {
-
+    
             const combinations =
               getBoardCombinations(
-                activeBoards,
-                count
+                prioritizedBoards,
+                groupCount
               );
-
+    
             for (
-              const combination
-              of combinations
+              const combination of combinations
             ) {
-
-              const capacity =
+    
+              const minimumCapacity =
+                groupCount * 2;
+    
+              const maximumCapacity =
                 combination.reduce(
                   (total, board) =>
                     total + board.max,
                   0
                 );
-
+    
               if (
-                studentCount >= count * 2 &&
-                studentCount <= capacity
+                studentCount >= minimumCapacity &&
+                studentCount <= maximumCapacity
               ) {
-
+    
+                /*
+                 * Sort the selected boards so
+                 * MAX 2 boards always appear first.
+                 */
                 selectedBoards =
                   combination.sort(
-                    (a, b) =>
-                      activeBoards.indexOf(a) -
-                      activeBoards.indexOf(b)
+                    (a, b) => {
+    
+                      if (a.max !== b.max) {
+                        return a.max - b.max;
+                      }
+    
+                      return (
+                        prioritizedBoards.indexOf(a) -
+                        prioritizedBoards.indexOf(b)
+                      );
+                    }
                   );
-
+    
                 break;
-
               }
-
             }
-
+    
             if (selectedBoards) {
               break;
             }
-
           }
-
         }
-
-
+    
+    
+        /*
+         * No possible arrangement.
+         */
+    
         if (!selectedBoards) {
-
+    
           const totalCapacity =
-            activeBoards.reduce(
+            prioritizedBoards.reduce(
               (total, board) =>
                 total + board.max,
               0
             );
-
-          document.getElementById(
-            "errorMsg"
-          ).innerText =
+    
+          document.getElementById("errorMsg").innerText =
             `Cannot fit ${studentCount} students. ` +
             `The room has ${totalCapacity} total seats. ` +
             `Enable "Override capacity" to continue.`;
-
+    
           return;
-
         }
-
-
+    
+    
+        /*
+         * Shuffle students.
+         */
+    
         const students =
-          shuffle(
-            activeStudents
-          );
-
+          shuffle(activeStudents);
+    
+    
+        /*
+         * =====================================================
+         * GROUP SIZES
+         *
+         * First give every group 2 students.
+         * Then use spare capacity.
+         *
+         * MAX 2 boards cannot receive a third student,
+         * so once they are full, MAX 3 boards get the extras.
+         * =====================================================
+         */
+    
         const groupSizes =
           new Array(
             selectedBoards.length
           ).fill(2);
-
+    
         let remaining =
           studentCount -
           selectedBoards.length * 2;
-
-
+    
+    
+        /*
+         * Fill MAX 3 groups from 2 -> 3.
+         *
+         * MAX 2 groups stay at exactly 2.
+         */
+    
+        for (
+          let i = 0;
+          i < selectedBoards.length &&
+          remaining > 0;
+          i++
+        ) {
+    
+          if (
+            selectedBoards[i].max >= 3
+          ) {
+    
+            groupSizes[i] = 3;
+    
+            remaining--;
+          }
+        }
+    
+    
+        /*
+         * If any students are still remaining,
+         * use any remaining board capacity.
+         */
+    
         while (
           remaining > 0
         ) {
-
-          let added =
-            false;
-
+    
+          let added = false;
+    
           for (
             let i = 0;
             i < selectedBoards.length;
             i++
           ) {
-
+    
             if (
               groupSizes[i] <
               selectedBoards[i].max
             ) {
-
+    
               groupSizes[i]++;
-
+    
               remaining--;
-
+    
               added = true;
-
+    
               if (
                 remaining === 0
               ) {
-
                 break;
-
               }
-
             }
-
           }
-
+    
+          /*
+           * Safety check.
+           */
           if (!added) {
             break;
           }
-
         }
-
-
+    
+    
+        /*
+         * =====================================================
+         * CREATE BOARD DATA
+         * =====================================================
+         */
+    
         const boardsData = {};
-
-        activeBoards.forEach(
+    
+        layoutConfig.forEach(
           board => {
-
-            boardsData[
-              board.id
-            ] = [];
-
+    
+            boardsData[board.id] = [];
+    
           }
         );
-
-
+    
+    
+        /*
+         * Assign students.
+         */
+    
         let studentIndex = 0;
-
+    
         selectedBoards.forEach(
           (board, groupIndex) => {
-
+    
             for (
               let i = 0;
               i < groupSizes[groupIndex];
               i++
             ) {
-
-              boardsData[
-                board.id
-              ].push(
-                students[
-                  studentIndex
-                ]
+    
+              boardsData[board.id].push(
+                students[studentIndex]
               );
-
+    
               studentIndex++;
-
+    
             }
-
+    
           }
         );
-
-
+    
+    
         renderGroups(
           boardsData
         );
-
+    
         return;
-
       }
-
-
-      /* ===================================================
+    
+    
+      /* =====================================================
          OVERRIDE MODE
-         =================================================== */
-
+         ===================================================== */
+    
       const students =
-        shuffle(
-          activeStudents
-        );
-
+        shuffle(activeStudents);
+    
+    
+      /*
+       * Still prioritize MAX 2 boards.
+       */
+    
       let groupCount =
         Math.ceil(
           studentCount / 3
         );
-
+    
+    
+      /*
+       * Don't use more physical boards
+       * than actually exist.
+       */
+    
       groupCount =
         Math.min(
           groupCount,
-          activeBoards.length
+          prioritizedBoards.length
         );
-
+    
+    
+      /*
+       * Every group needs at least 2.
+       */
+    
       if (
         studentCount <
         groupCount * 2
       ) {
-
+    
         groupCount =
           Math.floor(
             studentCount / 2
           );
-
       }
-
-
+    
+    
+      if (
+        groupCount < 1
+      ) {
+    
+        groupCount = 1;
+    
+      }
+    
+    
+      /*
+       * Use MAX 2 boards first.
+       */
+    
       const selectedBoards =
-        activeBoards.slice(
+        prioritizedBoards.slice(
           0,
           groupCount
         );
-
+    
+    
+      /*
+       * Start every group with 2.
+       */
+    
       const groupSizes =
         new Array(
           groupCount
         ).fill(2);
-
+    
+    
       let remaining =
         studentCount -
         groupCount * 2;
-
+    
+    
+      /*
+       * Fill MAX 3 boards to 3 first.
+       *
+       * MAX 2 boards remain at 2.
+       */
+    
+      for (
+        let i = 0;
+        i < groupCount &&
+        remaining > 0;
+        i++
+      ) {
+    
+        if (
+          selectedBoards[i].max >= 3
+        ) {
+    
+          groupSizes[i]++;
+    
+          remaining--;
+        }
+      }
+    
+    
+      /*
+       * Override allows groups to exceed MAX.
+       *
+       * Distribute remaining students evenly.
+       */
+    
       let position = 0;
-
+    
       while (
         remaining > 0
       ) {
-
+    
         groupSizes[position]++;
-
+    
         remaining--;
-
+    
         position++;
-
+    
         if (
           position >= groupCount
         ) {
-
+    
           position = 0;
-
+    
         }
-
       }
-
-
+    
+    
+      /*
+       * =====================================================
+       * CREATE BOARD DATA
+       * =====================================================
+       */
+    
       const boardsData = {};
-
-      activeBoards.forEach(
+    
+      layoutConfig.forEach(
         board => {
-
-          boardsData[
-            board.id
-          ] = [];
-
+    
+          boardsData[board.id] = [];
+    
         }
       );
-
-
+    
+    
+      /*
+       * Assign students.
+       */
+    
       let studentIndex = 0;
-
+    
       selectedBoards.forEach(
         (board, groupIndex) => {
-
+    
           for (
             let i = 0;
             i < groupSizes[groupIndex];
             i++
           ) {
-
-            boardsData[
-              board.id
-            ].push(
-              students[
-                studentIndex
-              ]
+    
+            boardsData[board.id].push(
+              students[studentIndex]
             );
-
+    
             studentIndex++;
-
+    
           }
-
+    
         }
       );
-
-
+    
+    
       renderGroups(
         boardsData
       );
-
     }
-
 
     /* =====================================================
        RENDER GROUPS
@@ -2288,32 +2436,37 @@
        ===================================================== */
 
     function drawWheel() {
-
+    
       const canvas =
         document.getElementById(
           "studentWheel"
         );
-
+    
       if (!canvas) {
         return;
       }
-
+    
       const ctx =
         canvas.getContext(
           "2d"
         );
-
+    
       const noRepeat =
         document.getElementById(
           "noRepeat"
         ).checked;
-
+    
       let students =
         getActiveStudents();
-
-
+    
+    
+      /*
+       * Remove students who have already
+       * been picked when no-repeat is enabled.
+       */
+    
       if (noRepeat) {
-
+    
         students =
           students.filter(
             student =>
@@ -2321,35 +2474,39 @@
                 student
               )
           );
-
+    
       }
-
-
+    
+    
       const center =
         canvas.width / 2;
-
+    
       const radius =
         canvas.width / 2 - 8;
-
-
+    
+    
+      /*
+       * Clear the wheel.
+       */
+    
       ctx.clearRect(
         0,
         0,
         canvas.width,
         canvas.height
       );
-
-
+    
+    
       /* =================================================
          NO STUDENTS
          ================================================= */
-
+    
       if (
         students.length === 0
       ) {
-
+    
         ctx.beginPath();
-
+    
         ctx.arc(
           center,
           center,
@@ -2357,76 +2514,95 @@
           0,
           Math.PI * 2
         );
-
+    
         ctx.fillStyle =
           "#eeeeee";
-
+    
         ctx.fill();
-
+    
         ctx.strokeStyle =
           "#999";
-
+    
         ctx.lineWidth = 4;
-
+    
         ctx.stroke();
-
+    
         ctx.fillStyle =
           "#666";
-
+    
         ctx.font =
           "bold 24px Arial";
-
+    
         ctx.textAlign =
           "center";
-
+    
         ctx.textBaseline =
           "middle";
-
+    
         ctx.fillText(
           "No students",
           center,
           center
         );
-
+    
+    
         document.getElementById(
           "wheelStatus"
         ).innerText =
           "Add students to create the wheel.";
-
+    
         return;
-
       }
-
-
+    
+    
+      /* =================================================
+         CALCULATE SLICES
+         ================================================= */
+    
       const slice =
         (Math.PI * 2) /
         students.length;
-
+    
+    
+      /*
+       * Start at the top.
+       */
+    
       const startOffset =
         -Math.PI / 2;
-
-
+    
+    
+      /* =================================================
+         DRAW STUDENTS
+         ================================================= */
+    
       students.forEach(
         (student, index) => {
-
+    
           const start =
             startOffset +
             index * slice;
-
+    
           const end =
             start + slice;
-
+    
+    
+          /*
+           * Generate a different color
+           * for each slice.
+           */
+    
           const hue =
             (index * 47) % 360;
-
-
+    
+    
           ctx.beginPath();
-
+    
           ctx.moveTo(
             center,
             center
           );
-
+    
           ctx.arc(
             center,
             center,
@@ -2434,90 +2610,111 @@
             start,
             end
           );
-
+    
           ctx.closePath();
-
-
+    
+    
           ctx.fillStyle =
             `hsl(${hue}, 75%, 72%)`;
-
+    
           ctx.fill();
-
-
+    
+    
           ctx.strokeStyle =
             "#ffffff";
-
+    
           ctx.lineWidth = 3;
-
+    
           ctx.stroke();
-
-
+    
+    
+          /* =================================================
+             STUDENT NAME
+             ================================================= */
+    
           ctx.save();
-
+    
           ctx.translate(
             center,
             center
           );
-
+    
+    
           const middle =
             start +
             slice / 2;
-
+    
+    
           ctx.rotate(
             middle
           );
-
+    
+    
           ctx.fillStyle =
             "#222";
-
+    
+    
+          /*
+           * Smaller text when there are
+           * lots of students.
+           */
+    
           ctx.font =
             students.length > 25
               ? "10px Arial"
               : students.length > 15
                 ? "12px Arial"
                 : "14px Arial";
-
+    
+    
           ctx.textAlign =
             "right";
-
+    
           ctx.textBaseline =
             "middle";
-
-
+    
+    
+          /*
+           * Prevent very long names
+           * from overflowing.
+           */
+    
           let displayName =
             student;
-
+    
+    
           if (
             displayName.length > 18
           ) {
-
+    
             displayName =
               displayName.substring(
                 0,
                 17
               ) + "…";
-
+    
           }
-
-
+    
+    
           ctx.fillText(
             displayName,
             radius - 15,
             0
           );
-
+    
+    
           ctx.restore();
-
+    
         }
       );
-
-
+    
+    
       /* =================================================
          CENTER CIRCLE
          ================================================= */
-
+    
       ctx.beginPath();
-
+    
       ctx.arc(
         center,
         center,
@@ -2525,38 +2722,46 @@
         0,
         Math.PI * 2
       );
-
+    
+    
       ctx.fillStyle =
         "#ffffff";
-
+    
       ctx.fill();
-
+    
+    
       ctx.strokeStyle =
         "#444";
-
+    
       ctx.lineWidth = 3;
-
+    
       ctx.stroke();
-
+    
+    
       ctx.fillStyle =
         "#333";
-
+    
       ctx.font =
         "bold 14px Arial";
-
+    
       ctx.textAlign =
         "center";
-
+    
       ctx.textBaseline =
         "middle";
-
+    
+    
       ctx.fillText(
         "SPIN",
         center,
         center
       );
-
-
+    
+    
+      /* =================================================
+         STATUS
+         ================================================= */
+    
       document.getElementById(
         "wheelStatus"
       ).innerText =
@@ -2565,7 +2770,7 @@
             ? ""
             : "s"
         } available`;
-
+    
     }
 
 
@@ -2852,3 +3057,5 @@
 </body>
 
 </html>
+
+
