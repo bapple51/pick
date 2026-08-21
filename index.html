@@ -323,7 +323,34 @@
   </div>
 
 
-  
+  <!-- =====================================================
+       FULLSCREEN MODAL
+       ===================================================== -->
+
+  <div
+    id="fullscreenModal"
+    class="fullscreen-modal"
+    onclick="closeFullscreenBoard(event)"
+  >
+
+    <div
+      class="fullscreen-modal-content"
+      onclick="event.stopPropagation()"
+    >
+
+      <button
+        class="fullscreen-close-button"
+        onclick="closeFullscreenBoard()"
+        aria-label="Close fullscreen"
+      >
+        ×
+      </button>
+
+      <div id="fullscreenBoardContent"></div>
+
+    </div>
+
+  </div>
 
   <script src="js/storage.js"></script>
   <script src="js/rules.js"></script>
@@ -334,4 +361,3 @@
 </body>
 
 </html>
-
