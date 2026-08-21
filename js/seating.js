@@ -884,7 +884,7 @@
         currentCount >= max
       ) {
 
-        board.classList.add(
+        board.classList.remove(
           "over-limit"
         );
 
