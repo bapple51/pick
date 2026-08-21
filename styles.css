@@ -1,0 +1,765 @@
+* {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1400px;
+      margin: 20px auto;
+      padding: 0 20px;
+      line-height: 1.4;
+      color: #333;
+      background: #fafafa;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .flex-container {
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    select {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 120px;
+      padding: 10px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      resize: vertical;
+      font-family: Arial, sans-serif;
+    }
+
+    button {
+      padding: 10px 20px;
+      background: #0066cc;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 15px;
+      border-radius: 4px;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #004999;
+    }
+
+    button.secondary {
+      background: #6c757d;
+    }
+
+    button.secondary:hover {
+      background: #5a6268;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+    }
+
+    .error {
+      color: #cc0000;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+
+    .top-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .class-switcher {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .class-switcher label {
+      font-weight: bold;
+      color: #444;
+      font-size: 14px;
+    }
+
+    .class-switcher select {
+      min-width: 250px;
+    }
+
+    .roster-header {
+      font-weight: bold;
+      margin: 15px 0 5px;
+      color: #444;
+    }
+
+    .roster-list {
+      display: grid;
+      grid-template-columns:
+        repeat(auto-fill, minmax(180px, 1fr));
+      gap: 8px;
+      max-height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 4px;
+      background: #fff;
+    }
+
+    .roster-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      background: #f8f9fa;
+      padding: 4px 8px;
+      border-radius: 4px;
+      min-width: 0;
+    }
+
+    .roster-item label {
+      cursor: pointer;
+      flex-grow: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* =====================================================
+       OVERRIDE TOGGLE
+       ===================================================== */
+
+    .override-toggle {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 14px;
+      cursor: pointer;
+      user-select: none;
+      padding: 8px 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      background: white;
+    }
+
+    .override-toggle:hover {
+      background: #f5f5f5;
+    }
+
+    .override-toggle input {
+      width: 16px;
+      height: 16px;
+      cursor: pointer;
+      margin: 0;
+    }
+
+    /* =====================================================
+       CLASSROOM
+       ===================================================== */
+
+    .classroom-grid {
+      display: grid;
+
+      grid-template-columns:
+        repeat(8, minmax(0, 1fr));
+
+      grid-template-rows:
+        minmax(70px, auto)
+        minmax(100px, auto)
+        minmax(100px, auto)
+        minmax(100px, auto)
+        minmax(100px, auto);
+
+      gap: clamp(6px, 1vw, 12px);
+
+      width: 100%;
+      margin-top: 20px;
+    }
+
+    .board {
+      background: #f4f4f4;
+      border: 2px dashed #ccc;
+
+      padding:
+        clamp(5px, 0.8vw, 10px);
+
+      border-radius: 6px;
+
+      min-width: 0;
+      width: 100%;
+      min-height: 90px;
+
+      display: flex;
+      flex-direction: column;
+
+      transition:
+        background 0.2s,
+        border-color 0.2s,
+        transform 0.15s;
+    }
+
+    .board.drag-over {
+      background: #e0f0ff;
+      border-color: #0066cc;
+      transform: scale(1.01);
+    }
+
+    .board.over-limit {
+      border-color: #cc0000;
+      background: #fff5f5;
+    }
+
+    .board h3 {
+      margin: 0 0 8px;
+
+      font-size:
+        clamp(9px, 1vw, 13px);
+
+      color: #0066cc;
+
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 4px;
+
+      text-align: center;
+
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .board .limit {
+      font-weight: normal;
+      color: #666;
+
+      font-size:
+        clamp(7px, 0.8vw, 11px);
+    }
+
+    .board ul {
+      margin: 0;
+      padding: 0;
+
+      min-height: 60px;
+
+      list-style: none;
+      flex-grow: 1;
+    }
+
+    .board li {
+      padding:
+        clamp(3px, 0.5vw, 6px)
+        clamp(4px, 0.7vw, 8px);
+
+      margin: 4px 0;
+
+      background: white;
+
+      border: 1px solid #ddd;
+      border-radius: 4px;
+
+      cursor: grab;
+
+      box-shadow:
+        0 1px 3px rgba(0,0,0,0.05);
+
+      font-size:
+        clamp(8px, 0.9vw, 12px);
+
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+
+      user-select: none;
+    }
+
+    .board li:active {
+      cursor: grabbing;
+    }
+
+    /* =====================================================
+       ROOM POSITIONS
+       ===================================================== */
+
+    .l-smartboard {
+      grid-column: 3 / span 2;
+      grid-row: 1;
+    }
+
+    .r-smartboard {
+      grid-column: 5 / span 2;
+      grid-row: 1;
+    }
+
+    .easel {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    .casteel {
+      grid-column: 8;
+      grid-row: 2;
+    }
+
+    .bird {
+      grid-column: 1;
+      grid-row: 3;
+    }
+
+    .printer {
+      grid-column: 8;
+      grid-row: 3;
+    }
+
+    .sink {
+      grid-column: 1;
+      grid-row: 4;
+    }
+
+    .tv {
+      grid-column: 8;
+      grid-row: 4;
+    }
+
+    .b6 {
+      grid-column: 2;
+      grid-row: 5;
+    }
+
+    .b5 {
+      grid-column: 3;
+      grid-row: 5;
+    }
+
+    .b4 {
+      grid-column: 4;
+      grid-row: 5;
+    }
+
+    .b3 {
+      grid-column: 5;
+      grid-row: 5;
+    }
+
+    .b2 {
+      grid-column: 6;
+      grid-row: 5;
+    }
+
+    .b1 {
+      grid-column: 7;
+      grid-row: 5;
+    }
+
+    .thermostat {
+      grid-column: 8;
+      grid-row: 5;
+    }
+
+    /* =====================================================
+       PICKER LAUNCH CARD
+       ===================================================== */
+
+    .picker-launch-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+    }
+
+    .picker-launch-card h3 {
+      margin: 0 0 4px;
+    }
+
+    .picker-launch-card p {
+      margin: 0;
+      color: #666;
+    }
+
+    .open-picker-button {
+      white-space: nowrap;
+    }
+
+    /* =====================================================
+       PICKER MODAL
+       ===================================================== */
+
+    .picker-modal {
+      display: none;
+
+      position: fixed;
+      inset: 0;
+
+      z-index: 1000;
+
+      background: rgba(0, 0, 0, 0.55);
+
+      align-items: center;
+      justify-content: center;
+
+      padding: 20px;
+    }
+
+    .picker-modal.open {
+      display: flex;
+    }
+
+    .picker-modal-content {
+      position: relative;
+
+      width: min(700px, 100%);
+      max-height: 95vh;
+
+      overflow-y: auto;
+
+      background: white;
+
+      border-radius: 12px;
+
+      padding: 25px;
+
+      box-shadow:
+        0 20px 60px rgba(0,0,0,0.3);
+
+      animation:
+        modalOpen 0.18s ease-out;
+    }
+
+    @keyframes modalOpen {
+
+      from {
+        opacity: 0;
+        transform:
+          translateY(15px)
+          scale(0.98);
+      }
+
+      to {
+        opacity: 1;
+        transform:
+          translateY(0)
+          scale(1);
+      }
+
+    }
+
+    .picker-modal-header {
+      display: flex;
+
+      align-items: center;
+
+      justify-content: space-between;
+
+      gap: 15px;
+
+      margin-bottom: 5px;
+    }
+
+    .picker-modal-header h2 {
+      margin: 0;
+
+      font-size: 22px;
+    }
+
+    .close-modal-button {
+      width: 38px;
+      height: 38px;
+
+      padding: 0;
+
+      background: #f0f0f0;
+
+      color: #333;
+
+      font-size: 25px;
+
+      line-height: 1;
+
+      border-radius: 50%;
+    }
+
+    .close-modal-button:hover {
+      background: #ddd;
+      color: #111;
+    }
+
+    /* =====================================================
+       WHEEL
+       ===================================================== */
+
+    .wheel-card {
+      text-align: center;
+    }
+
+    .wheel-container {
+      position: relative;
+
+      width: min(520px, 90vw);
+
+      margin: 20px auto;
+    }
+
+    #studentWheel {
+      display: block;
+
+      width: 100%;
+      height: auto;
+
+      border-radius: 50%;
+
+      border: 5px solid #444;
+
+      box-shadow:
+        0 5px 20px rgba(0,0,0,0.18);
+
+      transform: rotate(0deg);
+    }
+
+    .wheel-pointer {
+      position: absolute;
+
+      top: -8px;
+      left: 50%;
+
+      transform:
+        translateX(-50%);
+
+      width: 0;
+      height: 0;
+
+      border-left:
+        18px solid transparent;
+
+      border-right:
+        18px solid transparent;
+
+      border-top:
+        35px solid #e00000;
+
+      z-index: 5;
+
+      filter:
+        drop-shadow(
+          0 2px 2px
+          rgba(0,0,0,0.25)
+        );
+    }
+
+    .winner-display {
+      min-height: 38px;
+
+      text-align: center;
+
+      font-size: 28px;
+
+      font-weight: bold;
+
+      color: #0066cc;
+
+      margin-top: 10px;
+    }
+
+    .wheel-status {
+      color: #666;
+
+      font-size: 14px;
+
+      margin-top: 5px;
+    }
+
+    .spin-button {
+      font-size: 18px;
+
+      padding: 12px 30px;
+    }
+
+    .picker-controls {
+      display: flex;
+
+      justify-content: center;
+
+      align-items: center;
+
+      gap: 12px;
+
+      flex-wrap: wrap;
+
+      margin-top: 10px;
+    }
+
+    .rules-panel {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+
+    .rules-header {
+      font-weight: bold;
+      font-size: 17px;
+      margin-bottom: 10px;
+    }
+
+    .rules-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .rules-row select {
+      min-width: 190px;
+    }
+
+    #ruleStudents {
+      min-width: 230px;
+    }
+
+    .rules-help {
+      margin: 8px 0;
+      color: #666;
+      font-size: 12px;
+    }
+
+    .rules-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .rule-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 10px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+
+    .rule-item.apart {
+      border-left: 4px solid #cc3333;
+    }
+
+    .rule-item.together {
+      border-left: 4px solid #2e8b57;
+    }
+
+    /* =====================================================
+       RESPONSIVE
+       ===================================================== */
+
+    @media (max-width: 800px) {
+
+      body {
+        padding: 0 10px;
+      }
+
+      .classroom-grid {
+        gap: 6px;
+      }
+
+      .board {
+        min-height: 80px;
+      }
+
+    }
+
+    @media (max-width: 550px) {
+
+      body {
+        padding: 0 6px;
+      }
+
+      .card {
+        padding: 12px;
+      }
+
+      .flex-container {
+        flex-direction: column;
+
+        align-items: stretch;
+      }
+
+      .flex-container select,
+      .flex-container button,
+      .override-toggle {
+        width: 100%;
+      }
+
+      .classroom-grid {
+        display: flex;
+
+        flex-direction: column;
+
+        gap: 8px;
+      }
+
+      .l-smartboard,
+      .r-smartboard,
+      .easel,
+      .bird,
+      .sink,
+      .casteel,
+      .printer,
+      .tv,
+      .b6,
+      .b5,
+      .b4,
+      .b3,
+      .b2,
+      .b1,
+      .thermostat {
+        grid-column: auto;
+        grid-row: auto;
+      }
+
+      .winner-display {
+        font-size: 22px;
+      }
+
+      .picker-launch-card {
+        flex-direction: column;
+
+        align-items: stretch;
+
+        text-align: center;
+      }
+
+      .open-picker-button {
+        width: 100%;
+      }
+
+      .picker-modal {
+        padding: 8px;
+      }
+
+      .picker-modal-content {
+        padding: 15px;
+
+        max-height: 98vh;
+      }
+
+      .wheel-container {
+        width: min(450px, 88vw);
+      }
+
+    }
