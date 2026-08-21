@@ -95,6 +95,30 @@
       margin-top: 10px;
     }
 
+
+    .top-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .class-switcher {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .class-switcher label {
+      font-weight: bold;
+      color: #444;
+      font-size: 14px;
+    }
+
+    .class-switcher select {
+      min-width: 250px;
+    }
+
     .roster-header {
       font-weight: bold;
       margin: 15px 0 5px;
@@ -594,6 +618,66 @@
       margin-top: 10px;
     }
 
+    .rules-panel {
+      margin-top: 14px;
+      padding: 14px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background: #fafafa;
+    }
+
+    .rules-header {
+      font-weight: bold;
+      font-size: 17px;
+      margin-bottom: 10px;
+    }
+
+    .rules-row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .rules-row select {
+      min-width: 190px;
+    }
+
+    #ruleStudents {
+      min-width: 230px;
+    }
+
+    .rules-help {
+      margin: 8px 0;
+      color: #666;
+      font-size: 12px;
+    }
+
+    .rules-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .rule-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 8px 10px;
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+    }
+
+    .rule-item.apart {
+      border-left: 4px solid #cc3333;
+    }
+
+    .rule-item.together {
+      border-left: 4px solid #2e8b57;
+    }
+
     /* =====================================================
        RESPONSIVE
        ===================================================== */
@@ -700,6 +784,18 @@
 
 <body>
 
+
+  <div class="top-bar">
+    <div class="class-switcher">
+      <label for="classSelect">Class:</label>
+      <select id="classSelect" onchange="switchClass()">
+        <option value="orion-casteel-algebra2-h7">
+          Orion Casteel Algebra 2 — H7
+        </option>
+      </select>
+    </div>
+  </div>
+
   <!-- =====================================================
        GROUP CONTROLS
        ===================================================== -->
@@ -766,6 +862,13 @@
       </button>
 
       <button
+        class="secondary"
+        onclick="openRulesPanel()"
+      >
+        Whiteboard Rules
+      </button>
+
+      <button
         onclick="splitGroups()"
       >
         Make Groups
@@ -797,6 +900,37 @@
         id="rosterList"
         class="roster-list"
       ></div>
+
+    </div>
+
+    <div
+      id="whiteboardRulesPanel"
+      class="rules-panel"
+      style="display:none;"
+    >
+
+      <div class="rules-header">
+        Whiteboard Rules
+      </div>
+
+      <div class="rules-row">
+        <select id="ruleType">
+          <option value="apart">Keep these students apart</option>
+          <option value="together">Put these students together</option>
+        </select>
+
+        <select id="ruleStudents" multiple size="6"></select>
+
+        <button class="secondary" onclick="addWhiteboardRule()">
+          Add Rule
+        </button>
+      </div>
+
+      <p class="rules-help">
+        Select two or more students. Use Ctrl/Cmd-click to select multiple students.
+      </p>
+
+      <div id="rulesList" class="rules-list"></div>
 
     </div>
 
@@ -958,6 +1092,44 @@
 
   <script>
 
+
+    /* =====================================================
+       CLASS SWITCHER
+       ===================================================== */
+
+    const classStorageKey = "selectedClass";
+
+    function switchClass() {
+      const classSelect = document.getElementById("classSelect");
+
+      if (!classSelect) {
+        return;
+      }
+
+      localStorage.setItem(
+        classStorageKey,
+        classSelect.value
+      );
+    }
+
+    function loadSelectedClass() {
+      const classSelect = document.getElementById("classSelect");
+
+      if (!classSelect) {
+        return;
+      }
+
+      const savedClass =
+        localStorage.getItem(classStorageKey);
+
+      if (savedClass &&
+          Array.from(classSelect.options).some(
+            option => option.value === savedClass
+          )) {
+        classSelect.value = savedClass;
+      }
+    }
+
     /* =====================================================
        ROOM CONFIGURATION
        ===================================================== */
@@ -1083,6 +1255,245 @@
         ) || "{}"
       );
 
+    /* =====================================================
+       WHITEBOARD RULES
+       Saved separately for each period.
+       ===================================================== */
+
+    let allWhiteboardRules =
+      JSON.parse(
+        localStorage.getItem(
+          "whiteboardRules"
+        ) || "{}"
+      );
+
+    function getCurrentPeriod() {
+      return document.getElementById("periodSelect").value;
+    }
+
+    function getCurrentRules() {
+      const period = getCurrentPeriod();
+      return Array.isArray(allWhiteboardRules[period])
+        ? allWhiteboardRules[period]
+        : [];
+    }
+
+    function saveWhiteboardRules() {
+      const period = getCurrentPeriod();
+      allWhiteboardRules[period] = getCurrentRules();
+      localStorage.setItem(
+        "whiteboardRules",
+        JSON.stringify(allWhiteboardRules)
+      );
+    }
+
+    function openRulesPanel() {
+      const panel = document.getElementById("whiteboardRulesPanel");
+      panel.style.display =
+        panel.style.display === "none" ? "block" : "none";
+      updateRuleStudentOptions();
+      renderWhiteboardRules();
+    }
+
+    function updateRuleStudentOptions() {
+      const select = document.getElementById("ruleStudents");
+      if (!select) return;
+
+      const students = allPeriodData[getCurrentPeriod()] || [];
+      const previous = Array.from(select.selectedOptions).map(o => o.value);
+      select.innerHTML = "";
+
+      students.forEach(student => {
+        const option = document.createElement("option");
+        option.value = student;
+        option.textContent = student;
+        option.selected = previous.includes(student);
+        select.appendChild(option);
+      });
+    }
+
+    function addWhiteboardRule() {
+      const type = document.getElementById("ruleType").value;
+      const selected = Array.from(
+        document.getElementById("ruleStudents").selectedOptions
+      ).map(option => option.value);
+
+      if (selected.length < 2) {
+        alert("Select at least two students for a rule.");
+        return;
+      }
+
+      const rules = getCurrentRules();
+      rules.push({
+        type,
+        students: selected
+      });
+
+      const period = getCurrentPeriod();
+      allWhiteboardRules[period] = rules;
+      saveWhiteboardRules();
+
+      document.getElementById("ruleStudents").selectedIndex = -1;
+      renderWhiteboardRules();
+    }
+
+    function deleteWhiteboardRule(index) {
+      const period = getCurrentPeriod();
+      const rules = getCurrentRules();
+      rules.splice(index, 1);
+      allWhiteboardRules[period] = rules;
+      saveWhiteboardRules();
+      renderWhiteboardRules();
+    }
+
+    function renderWhiteboardRules() {
+      const container = document.getElementById("rulesList");
+      if (!container) return;
+
+      const rules = getCurrentRules();
+      container.innerHTML = "";
+
+      if (rules.length === 0) {
+        container.innerHTML = '<div style="color:#777;font-size:13px;">No rules saved for this period.</div>';
+        return;
+      }
+
+      rules.forEach((rule, index) => {
+        const item = document.createElement("div");
+        item.className = `rule-item ${rule.type}`;
+
+        const label = document.createElement("span");
+        label.textContent =
+          (rule.type === "apart" ? "KEEP APART: " : "PUT TOGETHER: ") +
+          rule.students.join(", ");
+
+        const button = document.createElement("button");
+        button.className = "secondary";
+        button.textContent = "Delete";
+        button.onclick = () => deleteWhiteboardRule(index);
+
+        item.appendChild(label);
+        item.appendChild(button);
+        container.appendChild(item);
+      });
+    }
+
+    function validateWhiteboardRules(activeStudents) {
+      const active = new Set(activeStudents.map(s => s.toLowerCase()));
+      return getCurrentRules().filter(rule =>
+        rule.students.every(student => active.has(student.toLowerCase()))
+      );
+    }
+
+    function assignStudentsWithWhiteboardRules(
+      selectedBoards,
+      groupSizes,
+      activeStudents
+    ) {
+      const rules = validateWhiteboardRules(activeStudents);
+      const studentByKey = new Map(
+        activeStudents.map(student => [student.toLowerCase(), student])
+      );
+
+      const parent = new Map();
+      activeStudents.forEach(student => parent.set(student.toLowerCase(), student.toLowerCase()));
+
+      function find(x) {
+        let root = x;
+        while (parent.get(root) !== root) root = parent.get(root);
+        while (parent.get(x) !== x) {
+          const next = parent.get(x);
+          parent.set(x, root);
+          x = next;
+        }
+        return root;
+      }
+
+      function union(a, b) {
+        const ra = find(a);
+        const rb = find(b);
+        if (ra !== rb) parent.set(ra, rb);
+      }
+
+      rules.filter(r => r.type === "together").forEach(rule => {
+        const first = rule.students[0].toLowerCase();
+        for (let i = 1; i < rule.students.length; i++) {
+          union(first, rule.students[i].toLowerCase());
+        }
+      });
+
+      const units = new Map();
+      activeStudents.forEach(student => {
+        const key = find(student.toLowerCase());
+        if (!units.has(key)) units.set(key, []);
+        units.get(key).push(student);
+      });
+
+      const unitList = Array.from(units.values()).sort((a, b) => b.length - a.length);
+      const boardData = selectedBoards.map((board, index) => ({
+        board,
+        size: groupSizes[index],
+        students: []
+      }));
+
+      const apartPairs = [];
+      rules.filter(r => r.type === "apart").forEach(rule => {
+        for (let i = 0; i < rule.students.length; i++) {
+          for (let j = i + 1; j < rule.students.length; j++) {
+            apartPairs.push([
+              rule.students[i].toLowerCase(),
+              rule.students[j].toLowerCase()
+            ]);
+          }
+        }
+      });
+
+      function violatesApart(unit, existing) {
+        const existingKeys = new Set(existing.map(s => s.toLowerCase()));
+        return apartPairs.some(([a, b]) => {
+          const unitKeys = unit.map(s => s.toLowerCase());
+          return unitKeys.some(k => k === a || k === b) &&
+            unitKeys.some(k => k === a || k === b) &&
+            (unitKeys.includes(a) && (existingKeys.has(b) || unitKeys.includes(b)) ||
+             unitKeys.includes(b) && (existingKeys.has(a) || unitKeys.includes(a)));
+        });
+      }
+
+      function canPlace(unit, target) {
+        if (target.students.length + unit.length > target.size) return false;
+        return !violatesApart(unit, target.students);
+      }
+
+      function search(index) {
+        if (index >= unitList.length) return true;
+
+        const unit = unitList[index];
+        const order = boardData
+          .map((_, i) => i)
+          .sort((a, b) => boardData[a].students.length - boardData[b].students.length);
+
+        for (const boardIndex of order) {
+          const target = boardData[boardIndex];
+          if (!canPlace(unit, target)) continue;
+
+          target.students.push(...unit);
+          if (search(index + 1)) return true;
+          target.students.splice(target.students.length - unit.length, unit.length);
+        }
+
+        return false;
+      }
+
+      if (!search(0)) return null;
+
+      const result = {};
+      layoutConfig.forEach(board => result[board.id] = []);
+      boardData.forEach(entry => {
+        result[entry.board.id] = entry.students;
+      });
+      return result;
+    }
+
 
     /* =====================================================
        WHEEL STATE
@@ -1101,6 +1512,7 @@
 
     window.onload = function() {
 
+      loadSelectedClass();
       loadPeriodRoster();
 
       renderEmptyLayout();
@@ -1409,6 +1821,8 @@
 
         pickedStudents = [];
 
+        updateRuleStudentOptions();
+        renderWhiteboardRules();
         drawWheel();
 
         return;
@@ -1417,6 +1831,9 @@
 
       textarea.value =
         students.join("\n");
+
+      updateRuleStudentOptions();
+      renderWhiteboardRules();
 
       rosterSection.style.display =
         "block";
@@ -2027,63 +2444,26 @@
     
     
         /* =====================================================
-           CREATE EMPTY BOARD DATA
+           ASSIGN STUDENTS WITH SAVED WHITEBOARD RULES
            ===================================================== */
-    
-        const boardsData = {};
-    
-    
-        layoutConfig.forEach(
-          board => {
-    
-            boardsData[
-              board.id
-            ] = [];
-    
-          }
-        );
-    
-    
-        /* =====================================================
-           ASSIGN STUDENTS
-           ===================================================== */
-    
-        let studentIndex = 0;
-    
-    
-        selectedBoards.forEach(
-          (board, groupIndex) => {
-    
-            const size =
-              groupSizes[groupIndex];
-    
-    
-            for (
-              let i = 0;
-              i < size;
-              i++
-            ) {
-    
-              boardsData[
-                board.id
-              ].push(
-                students[
-                  studentIndex
-                ]
-              );
-    
-              studentIndex++;
-    
-            }
-    
-          }
-        );
-    
-    
+
+        const boardsData =
+          assignStudentsWithWhiteboardRules(
+            selectedBoards,
+            groupSizes,
+            students
+          );
+
+        if (!boardsData) {
+          document.getElementById("errorMsg").innerText =
+            "The saved whiteboard rules cannot be satisfied with the available group sizes. Remove or change a rule and try again.";
+          return;
+        }
+
         renderGroups(
           boardsData
         );
-    
+
         return;
       }
     
@@ -2193,55 +2573,22 @@
     
     
       /* =====================================================
-         CREATE BOARD DATA
+         ASSIGN STUDENTS WITH SAVED WHITEBOARD RULES
          ===================================================== */
-    
-      const boardsData = {};
-    
-    
-      layoutConfig.forEach(
-        board => {
-    
-          boardsData[
-            board.id
-          ] = [];
-    
-        }
-      );
-    
-    
-      /* =====================================================
-         ASSIGN STUDENTS
-         ===================================================== */
-    
-      let studentIndex = 0;
-    
-    
-      selectedBoards.forEach(
-        (board, groupIndex) => {
-    
-          for (
-            let i = 0;
-            i < groupSizes[groupIndex];
-            i++
-          ) {
-    
-            boardsData[
-              board.id
-            ].push(
-              students[
-                studentIndex
-              ]
-            );
-    
-            studentIndex++;
-    
-          }
-    
-        }
-      );
-    
-    
+
+      const boardsData =
+        assignStudentsWithWhiteboardRules(
+          selectedBoards,
+          groupSizes,
+          students
+        );
+
+      if (!boardsData) {
+        document.getElementById("errorMsg").innerText =
+          "The saved whiteboard rules cannot be satisfied with the available group sizes. Remove or change a rule and try again.";
+        return;
+      }
+
       renderGroups(
         boardsData
       );
@@ -3113,5 +3460,3 @@
 </body>
 
 </html>
-
-
