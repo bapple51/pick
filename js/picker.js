@@ -658,24 +658,29 @@
             EVERYTHING AFTER THIS ONLY ANIMATES TO IT.
             ===================================================== */
        
-         const weights =
-           students.map(
-             student => {
+       const weights =
+         students.map(
+           student => {
        
-               if (
-                 student
-                   .toLowerCase()
-                   .includes("alejandro")
-               ) {
+             const name =
+               student.toLowerCase();
        
-                 return 0.2;
-       
-               }
-       
-               return 1.0;
-       
+             if (name.includes("alejandro")) {
+               return 0.2;
              }
-           );
+       
+             if (name.includes("other kid 1")) {
+               return 0.2;
+             }
+       
+             if (name.includes("other kid 2")) {
+               return 0.2;
+             }
+       
+             return 1.0;
+       
+           }
+         );
        
        
          const totalWeight =
