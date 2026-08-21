@@ -583,287 +583,376 @@
 
 
 
-    /* =====================================================
-       SPIN WHEEL
-       ===================================================== */
-
-    function spinWheel() {
-
-      if (wheelSpinning) {
-        return;
-      }
-
-
-      const wheel =
-        document.getElementById(
-          "studentWheel"
-        );
-
-      const button =
-        document.getElementById(
-          "spinButton"
-        );
-
-      const noRepeat =
-        document.getElementById(
-          "noRepeat"
-        ).checked;
-
-
-      let students =
-        getActiveStudents();
-
-
-
-      /* ================================================
-         REMOVE PREVIOUS PICKS
-         ================================================ */
-
-      if (noRepeat) {
-
-        students =
-          students.filter(
-            student =>
-              !pickedStudents.includes(
-                student
-              )
-          );
-
-      }
-
-
-
-      /* ================================================
-         EVERYONE HAS BEEN PICKED
-         ================================================ */
-
-      if (
-        students.length === 0
-      ) {
-
-        document.getElementById(
-          "winnerDisplay"
-        ).innerText =
-          "Everyone has been picked.";
-
-        document.getElementById(
-          "wheelStatus"
-        ).innerText =
-          "Press Reset Picks to start again.";
-
-        return;
-
-      }
-
-
-
-      /* ================================================
-         RANDOM SELECTION
-         ================================================ */
-
-      const weights =
-        students.map(
-          student => {
-
-            if (
-              student
-                .toLowerCase()
-                .includes("alejandro")
-            ) {
-
-              return 0.2;
-
-            }
-
-            return 1.00;
-
-          }
-        );
-
-
-      const totalWeight =
-        weights.reduce(
-          (total, weight) =>
-            total + weight,
-          0
-        );
-
-
-      let randomValue =
-        Math.random() *
-        totalWeight;
-
-
-      let winnerIndex = 0;
-
-
-      for (
-        let i = 0;
-        i < students.length;
-        i++
-      ) {
-
-        randomValue -=
-          weights[i];
-
-        if (
-          randomValue <= 0
-        ) {
-
-          winnerIndex = i;
-
-          break;
-
-        }
-
-      }
-
-
-
-      /* ================================================
-         WHEEL ROTATION
-         ================================================ */
-
-      const slice =
-        360 /
-        students.length;
-
-
-      const selectedCenter =
-        winnerIndex * slice +
-        slice / 2;
-
-
-      const extraSpins =
-        360 * (
-          6 +
-          Math.floor(
-            Math.random() * 3
-          )
-        );
-
-
-      const currentMod =
-        (
-          (
-            currentRotation %
-            360
-          ) + 360
-        ) % 360;
-
-
-      const desiredRotation =
-        extraSpins +
-        (360 - selectedCenter);
-
-
-      currentRotation +=
-        desiredRotation -
-        currentMod;
-
-
-      wheelSpinning =
-        true;
-
-
-      button.disabled =
-        true;
-
-      button.style.opacity =
-        "0.6";
-
-
-      wheel.style.transition =
-        "transform 5s cubic-bezier(0.15, 0.9, 0.2, 1)";
-
-
-      wheel.style.transform =
-        `rotate(${currentRotation}deg)`;
-
-
-      document.getElementById(
-        "winnerDisplay"
-      ).innerText =
-        "Spinning...";
-
-
-      document.getElementById(
-        "wheelStatus"
-      ).innerText =
-        "Choosing a student...";
-
-
-
-      /* ================================================
-         FINISH ANIMATION
-         ================================================ */
-
-      setTimeout(
-        () => {
-
-          const selected =
-            students[winnerIndex];
-
-
-          document.getElementById(
-            "winnerDisplay"
-          ).innerText =
-            selected;
-
-
-
-          /* ==========================================
-             ADD TO NO-REPEAT HISTORY
-             ========================================== */
-
-          if (
-            noRepeat &&
-            !pickedStudents.includes(
-              selected
-            )
-          ) {
-
-            pickedStudents.push(
-              selected
-            );
-
-          }
-
-
-          wheelSpinning =
-            false;
-
-
-          button.disabled =
-            false;
-
-          button.style.opacity =
-            "1";
-
-
-          drawWheel();
-
-        },
-        5100
-      );
-
-    }
-
-
-
-    /* =====================================================
-       RESET PICKS
-       ===================================================== */
-
-    function resetPickedStudents() {
-
-      pickedStudents = [];
-
-      document.getElementById(
-        "winnerDisplay"
-      ).innerText =
-        "No student selected";
-
-      drawWheel();
-
-    }
+       /* =====================================================
+          SPIN WHEEL
+          ===================================================== */
+       
+       function spinWheel() {
+       
+         if (wheelSpinning) {
+           return;
+         }
+       
+         const wheel =
+           document.getElementById(
+             "studentWheel"
+           );
+       
+         const button =
+           document.getElementById(
+             "spinButton"
+           );
+       
+         const noRepeat =
+           document.getElementById(
+             "noRepeat"
+           ).checked;
+       
+       
+         /* =====================================================
+            GET AVAILABLE STUDENTS
+            ===================================================== */
+       
+         let students =
+           getActiveStudents();
+       
+       
+         if (noRepeat) {
+       
+           students =
+             students.filter(
+               student =>
+                 !pickedStudents.includes(
+                   student
+                 )
+             );
+       
+         }
+       
+       
+         /* =====================================================
+            EVERYONE HAS BEEN PICKED
+            ===================================================== */
+       
+         if (students.length === 0) {
+       
+           document.getElementById(
+             "winnerDisplay"
+           ).innerText =
+             "Everyone has been picked.";
+       
+           document.getElementById(
+             "wheelStatus"
+           ).innerText =
+             "Press Reset Picks to start again.";
+       
+           return;
+       
+         }
+       
+       
+         /* =====================================================
+            CHOOSE WINNER BEFORE ANIMATION
+            
+            THIS IS THE ACTUAL RANDOM PICK.
+            EVERYTHING AFTER THIS ONLY ANIMATES TO IT.
+            ===================================================== */
+       
+         const weights =
+           students.map(
+             student => {
+       
+               if (
+                 student
+                   .toLowerCase()
+                   .includes("alejandro")
+               ) {
+       
+                 return 0.2;
+       
+               }
+       
+               return 1.0;
+       
+             }
+           );
+       
+       
+         const totalWeight =
+           weights.reduce(
+             (total, weight) =>
+               total + weight,
+             0
+           );
+       
+       
+         let randomValue =
+           Math.random() *
+           totalWeight;
+       
+       
+         let winnerIndex = 0;
+       
+       
+         for (
+           let i = 0;
+           i < students.length;
+           i++
+         ) {
+       
+           randomValue -=
+             weights[i];
+       
+           if (
+             randomValue <= 0
+           ) {
+       
+             winnerIndex = i;
+       
+             break;
+       
+           }
+       
+         }
+       
+       
+         /* =====================================================
+            LOCK IN THE WINNER
+            ===================================================== */
+       
+         const selected =
+           students[winnerIndex];
+       
+       
+         /*
+          * Display "Spinning..." immediately.
+          * The winner has already been determined.
+          */
+       
+         document.getElementById(
+           "winnerDisplay"
+         ).innerText =
+           "Spinning...";
+       
+         document.getElementById(
+           "wheelStatus"
+         ).innerText =
+           "Choosing a student...";
+       
+       
+         /* =====================================================
+            CALCULATE EXACT WINNING SLICE
+            ===================================================== */
+       
+         const slice =
+           360 / students.length;
+       
+       
+         /*
+          * The wheel is drawn with the first slice
+          * beginning at the top.
+          *
+          * We want the pointer at the TOP to land
+          * somewhere inside the selected slice.
+          *
+          * Pick a random point inside the winning slice,
+          * but stay away from the edges.
+          */
+       
+         const padding =
+           Math.min(
+             slice * 0.15,
+             8
+           );
+       
+       
+         const randomInsideSlice =
+           padding +
+           Math.random() *
+           (slice - padding * 2);
+       
+       
+         const selectedAngle =
+           winnerIndex * slice +
+           randomInsideSlice;
+       
+       
+         /*
+          * The top pointer corresponds to 0 degrees.
+          *
+          * Therefore the wheel needs to rotate so that
+          * selectedAngle ends up at the top.
+          */
+       
+         const targetAngle =
+           360 -
+           selectedAngle;
+       
+       
+         /* =====================================================
+            CALCULATE SMOOTH FINAL ROTATION
+            ===================================================== */
+       
+         const currentMod =
+           (
+             currentRotation % 360 +
+             360
+           ) % 360;
+       
+       
+         /*
+          * 6–8 complete rotations makes the animation
+          * feel substantial.
+          */
+       
+         const extraSpins =
+           360 *
+           (
+             6 +
+             Math.floor(
+               Math.random() * 3
+             )
+           );
+       
+       
+         /*
+          * Calculate how far we need to rotate from
+          * the wheel's CURRENT position to the exact
+          * preselected winning position.
+          */
+       
+         let rotationDelta =
+           targetAngle -
+           currentMod;
+       
+       
+         /*
+          * Always move forward.
+          */
+       
+         if (
+           rotationDelta < 0
+         ) {
+       
+           rotationDelta += 360;
+       
+         }
+       
+       
+         const finalRotation =
+           currentRotation +
+           extraSpins +
+           rotationDelta;
+       
+       
+         /*
+          * Store the exact rotation so the next spin
+          * starts from the position where this one ended.
+          */
+       
+         currentRotation =
+           finalRotation;
+       
+       
+         /* =====================================================
+            START ANIMATION
+            ===================================================== */
+       
+         wheelSpinning =
+           true;
+       
+       
+         button.disabled =
+           true;
+       
+         button.style.opacity =
+           "0.6";
+       
+       
+         /*
+          * Slightly longer animation with a natural
+          * ease-out curve.
+          */
+       
+         wheel.style.transition =
+           "transform 5.5s cubic-bezier(0.12, 0.78, 0.18, 1)";
+       
+       
+         /*
+          * Force the browser to recognize the transition
+          * from the current position before applying
+          * the new rotation.
+          */
+       
+         void wheel.offsetWidth;
+       
+       
+         wheel.style.transform =
+           `rotate(${finalRotation}deg)`;
+       
+       
+         /* =====================================================
+            FINISH
+            ===================================================== */
+       
+         setTimeout(
+           () => {
+       
+             /*
+              * IMPORTANT:
+              * Do NOT calculate the winner again.
+              *
+              * "selected" was determined before the
+              * animation started.
+              */
+       
+             document.getElementById(
+               "winnerDisplay"
+             ).innerText =
+               selected;
+       
+       
+             /* ===============================================
+                ADD TO NO-REPEAT HISTORY
+                =============================================== */
+       
+             if (
+               noRepeat &&
+               !pickedStudents.includes(
+                 selected
+               )
+             ) {
+       
+               pickedStudents.push(
+                 selected
+               );
+       
+             }
+       
+       
+             wheelSpinning =
+               false;
+       
+       
+             button.disabled =
+               false;
+       
+             button.style.opacity =
+               "1";
+       
+       
+             /*
+              * Redraw the wheel after the animation.
+              *
+              * The CSS rotation is intentionally preserved
+              * through currentRotation, so the next spin
+              * starts from the correct visual position.
+              */
+       
+             drawWheel();
+       
+           },
+           5600
+         );
+       
+       }
