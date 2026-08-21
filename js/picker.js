@@ -669,11 +669,11 @@
                return 0.2;
              }
        
-             if (name.includes("other kid 1")) {
+             if (name.includes("isaac")) {
                return 0.2;
              }
        
-             if (name.includes("other kid 2")) {
+             if (name.includes("adriel")) {
                return 0.2;
              }
        
