@@ -752,7 +752,7 @@ function spinWheel() {
 
         if (
           name.includes(
-            "adriel"
+            "landon"
           )
         ) {
 
