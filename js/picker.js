@@ -15,7 +15,7 @@ const pickWeights = {
   landon: 0.2
 };
 
-const SPIN_DURATION_MS = 5500;
+const SPIN_DURATION_MS = 3000;
 
 
 /* =====================================================
