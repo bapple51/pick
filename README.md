@@ -11,11 +11,44 @@ A single-page, no-build classroom tool for teachers:
 - **Random student picker** – a spinning wheel that picks a student, with an
   optional no-repeat mode that remembers who has already been called on.
 
-Everything is stored in the browser's `localStorage`; there is no server.
+- **AI assistant** - a Gemini-backed chat for warm-ups, explanations and
+  wording help. The API key lives in a tiny Vercel serverless proxy
+  (`api/chat.js`), never in the page.
+
+Rosters, rules, pick history and chat history are stored in the browser's
+`localStorage`. The only server component is the optional chat proxy.
 
 ## Running
 
-Open `index.html` in a browser. No build step or dependencies.
+Open `index.html` in a browser (or serve the folder with any static server).
+No build step or dependencies. The AI chat needs the proxy below; everything
+else works without it.
+
+## Deploying the AI chat proxy (Vercel)
+
+The repo is public, so the Gemini key must not be committed. `api/chat.js` is
+a Vercel serverless function that reads the key from an environment variable
+and forwards chat requests to Gemini.
+
+1. Get a key from [Google AI Studio](https://aistudio.google.com/apikey).
+2. On [vercel.com](https://vercel.com) choose **Add New > Project** and import
+   this repository. Framework preset: **Other**; no build command.
+3. Under **Environment Variables** add `GEMINI_API_KEY`. Optional:
+   `GEMINI_MODEL` (default `gemini-2.5-flash`) and `ALLOWED_ORIGINS`
+   (comma-separated origins allowed to call the proxy, e.g.
+   `https://bapple51.github.io`).
+4. Deploy. Vercel serves the site *and* `/api/chat` from the same URL, so the
+   chat works out of the box there.
+
+If you host the page somewhere else (e.g. GitHub Pages), open the chat's
+**Settings** and paste the proxy URL
+(`https://<your-project>.vercel.app/api/chat`). It is saved in the browser.
+Set `ALLOWED_ORIGINS` on Vercel to your page's origin so other sites cannot
+use your key through the proxy.
+
+The proxy caps history at 30 messages, 4000 characters per message and 1024
+output tokens per reply. It does not send any roster data - only what you
+type into the chat.
 
 ## Usage
 
@@ -59,6 +92,8 @@ Open `index.html` in a browser. No build step or dependencies.
 | `js/rules.js` | Whiteboard rules UI and the rule-aware group assignment |
 | `js/seating.js` | Board selection, group sizing, rendering, drag-and-drop |
 | `js/picker.js` | Wheel drawing, spinning, pick history |
+| `js/chat.js` | AI chat UI; talks to the proxy |
+| `api/chat.js` | Vercel serverless function proxying to Gemini |
 | `js/app.js` | Page bootstrap |
 
 Scripts are plain globals loaded in dependency order; there is no module

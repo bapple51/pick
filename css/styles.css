@@ -782,6 +782,139 @@
     }
 
     /* =====================================================
+       AI CHAT
+       ===================================================== */
+
+    .chat-modal-content {
+      display: flex;
+      flex-direction: column;
+      height: min(720px, 92vh);
+    }
+
+    .chat-messages {
+      flex: 1 1 auto;
+      min-height: 200px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding: 12px;
+      margin: 10px 0;
+      background: #f7f8fa;
+      border: 1px solid #e3e3e3;
+      border-radius: 8px;
+    }
+
+    .chat-empty {
+      margin: auto;
+      color: #777;
+      font-size: 14px;
+      text-align: center;
+      padding: 20px;
+    }
+
+    .chat-bubble {
+      max-width: 85%;
+      padding: 9px 13px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.45;
+      overflow-wrap: anywhere;
+    }
+
+    .chat-bubble.user {
+      align-self: flex-end;
+      background: #0066cc;
+      color: white;
+      border-bottom-right-radius: 4px;
+    }
+
+    .chat-bubble.assistant {
+      align-self: flex-start;
+      background: white;
+      border: 1px solid #ddd;
+      border-bottom-left-radius: 4px;
+    }
+
+    .chat-bubble.thinking {
+      color: #777;
+      font-style: italic;
+    }
+
+    .chat-bubble.error {
+      align-self: stretch;
+      max-width: none;
+      background: #fff5f5;
+      border: 1px solid #f0b4b4;
+      color: #a12020;
+      font-size: 13px;
+    }
+
+    .chat-bubble pre {
+      background: #f0f0f0;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin: 6px 0;
+      overflow-x: auto;
+      font-size: 13px;
+      white-space: pre;
+    }
+
+    .chat-bubble code {
+      background: rgba(0, 0, 0, 0.07);
+      border-radius: 4px;
+      padding: 1px 4px;
+      font-size: 13px;
+    }
+
+    .chat-bubble.user code {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .chat-form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .chat-input {
+      height: auto;
+      min-height: 56px;
+      resize: none;
+    }
+
+    .chat-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .chat-settings {
+      margin-top: 12px;
+      font-size: 13px;
+      color: #555;
+    }
+
+    .chat-settings summary {
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .chat-settings label {
+      display: block;
+      margin: 8px 0 4px;
+      font-weight: bold;
+    }
+
+    .chat-settings input {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    /* =====================================================
        EASTER EGG
        ===================================================== */
 

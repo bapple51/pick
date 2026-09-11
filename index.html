@@ -325,6 +325,134 @@
 
 
   <!-- =====================================================
+       AI CHAT LAUNCHER
+       ===================================================== -->
+
+  <div class="card picker-launch-card">
+
+    <div>
+
+      <h3>
+        AI Assistant
+      </h3>
+
+      <p>
+        Ask Gemini for warm-up problems, explanations, or wording help.
+      </p>
+
+    </div>
+
+    <button
+      class="open-picker-button"
+      onclick="openChatModal()"
+    >
+      Open AI Chat
+    </button>
+
+  </div>
+
+
+  <!-- =====================================================
+       AI CHAT MODAL
+       ===================================================== -->
+
+  <div
+    id="chatModal"
+    class="picker-modal"
+    onclick="handleChatBackgroundClick(event)"
+  >
+
+    <div
+      class="picker-modal-content chat-modal-content"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="chatModalTitle"
+    >
+
+      <div class="picker-modal-header">
+
+        <h2 id="chatModalTitle">
+          AI Assistant
+        </h2>
+
+        <button
+          class="close-modal-button"
+          onclick="closeChatModal()"
+          aria-label="Close"
+        >
+          &times;
+        </button>
+
+      </div>
+
+      <div
+        id="chatMessages"
+        class="chat-messages"
+        aria-live="polite"
+      ></div>
+
+      <form
+        class="chat-form"
+        onsubmit="sendChatMessage(event)"
+      >
+
+        <textarea
+          id="chatInput"
+          class="chat-input"
+          rows="2"
+          placeholder="Ask anything... (Enter to send, Shift+Enter for a new line)"
+          onkeydown="handleChatInputKeydown(event)"
+        ></textarea>
+
+        <div class="chat-actions">
+
+          <button
+            type="submit"
+            id="chatSendButton"
+          >
+            Send
+          </button>
+
+          <button
+            type="button"
+            class="secondary"
+            onclick="clearChat()"
+          >
+            Clear
+          </button>
+
+        </div>
+
+      </form>
+
+      <details class="chat-settings">
+
+        <summary>Settings</summary>
+
+        <label for="chatEndpoint">
+          Proxy URL
+        </label>
+
+        <input
+          id="chatEndpoint"
+          type="url"
+          placeholder="https://your-app.vercel.app/api/chat"
+          onchange="saveChatEndpoint()"
+        >
+
+        <p class="hint">
+          Leave blank to use <code>/api/chat</code> on this site
+          (works when the whole repo is deployed to Vercel).
+        </p>
+
+      </details>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
        EASTER EGG OVERLAY
        ===================================================== -->
 
@@ -342,6 +470,7 @@
   <script src="js/rules.js"></script>
   <script src="js/seating.js"></script>
   <script src="js/picker.js"></script>
+  <script src="js/chat.js"></script>
   <script src="js/app.js"></script>
 
 </body>
