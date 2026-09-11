@@ -283,12 +283,23 @@ function splitGroups() {
 const easterEgg = {
   image: "img/chad-potential.png",
   chance: 1 / 15,
-  durationMs: 1000
+  durationMs: 1000,
+  cooldownMs: 10000
 };
 
 let easterEggTimer = null;
+let lastSplitAt = 0;
 
+/*
+ * Only roll the dice when Make Groups hasn't been clicked
+ * recently, so spamming the button never reveals the egg.
+ */
 function maybeShowEasterEgg() {
+  const now = Date.now();
+  const spamming = now - lastSplitAt < easterEgg.cooldownMs;
+  lastSplitAt = now;
+
+  if (spamming) return;
   if (Math.random() >= easterEgg.chance) return;
   showEasterEgg();
 }
