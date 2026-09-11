@@ -44,7 +44,7 @@ Open `index.html` in a browser. No build step or dependencies.
 - `js/picker.js` – `pickWeights` optionally lowers the odds of specific
   students being picked. Empty the object for equal odds.
 - `js/seating.js` – `easterEgg` controls the image that occasionally flashes
-  after **Make Groups** (default: 1-in-15 chance, 3 seconds, click to dismiss).
+  after **Make Groups** (default: 1-in-15 chance, 1 second, click to dismiss).
   Place the image at `img/chad-potential.png`; set `chance` to `0` to disable.
 
 ## Files

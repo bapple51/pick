@@ -283,7 +283,7 @@ function splitGroups() {
 const easterEgg = {
   image: "img/chad-potential.png",
   chance: 1 / 15,
-  durationMs: 3000
+  durationMs: 1000
 };
 
 let easterEggTimer = null;
