@@ -428,6 +428,12 @@
 
       overflow-y: auto;
 
+      /*
+       * The rotated wheel's bounding box would otherwise
+       * create a horizontal scrollbar.
+       */
+      overflow-x: hidden;
+
       background: white;
 
       border-radius: 12px;
@@ -661,6 +667,151 @@
 
     .rule-item.together {
       border-left: 4px solid #2e8b57;
+    }
+
+    .rule-item.inactive {
+      opacity: 0.6;
+      border-style: dashed;
+    }
+
+    .rule-item small {
+      color: #a05a00;
+      font-size: 12px;
+    }
+
+    .rules-empty {
+      color: #777;
+      font-size: 13px;
+    }
+
+    /* =====================================================
+       HINTS, PICKED LIST, RESULTS ACTIONS
+       ===================================================== */
+
+    .input-label {
+      display: block;
+      margin: 0 0 8px;
+      font-weight: bold;
+    }
+
+    .hint {
+      color: #666;
+      font-size: 13px;
+      margin: 8px 0 0;
+    }
+
+    .roster-hint {
+      padding: 8px 10px;
+      border-radius: 4px;
+      background: #fff8e1;
+      border: 1px solid #f0d58c;
+      color: #6b4f00;
+    }
+
+    .picker-intro {
+      text-align: center;
+      color: #666;
+      margin-top: 5px;
+    }
+
+    .picked-list {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px solid #eee;
+    }
+
+    .picked-label {
+      font-size: 13px;
+      font-weight: bold;
+      color: #444;
+      margin-right: 4px;
+    }
+
+    .picked-chip {
+      font-size: 13px;
+      background: #eef4fb;
+      border: 1px solid #cfe0f5;
+      color: #1d4f8a;
+      padding: 3px 9px;
+      border-radius: 999px;
+    }
+
+    .results-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .results-header h3 {
+      margin: 0;
+    }
+
+    .results-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .copy-status {
+      font-size: 13px;
+      color: #2e8b57;
+      min-width: 60px;
+    }
+
+    button:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    input:focus-visible {
+      outline: 2px solid #0066cc;
+      outline-offset: 2px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      .picker-modal-content {
+        animation: none;
+      }
+
+    }
+
+    /* =====================================================
+       EASTER EGG
+       ===================================================== */
+
+    .easter-egg {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      background: rgba(0, 0, 0, 0.8);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      cursor: pointer;
+    }
+
+    .easter-egg.open {
+      display: flex;
+      animation: easterEggIn 0.25s ease-out;
+    }
+
+    .easter-egg img {
+      max-width: 100%;
+      max-height: 100%;
+      border-radius: 8px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    }
+
+    @keyframes easterEggIn {
+      from { opacity: 0; transform: scale(0.9); }
+      to   { opacity: 1; transform: scale(1); }
     }
 
     /* =====================================================

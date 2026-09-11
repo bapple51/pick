@@ -35,19 +35,20 @@
 
   <div class="card">
 
-    <p
-      style="
-        margin-top:0;
-        font-weight:bold;
-      "
-    >
-      Paste names:
-    </p>
+    <label for="studentInput" class="input-label">
+      Paste names (one per line):
+    </label>
 
     <textarea
       id="studentInput"
       placeholder="Alice&#10;Bob&#10;Charlie..."
     ></textarea>
+
+    <div
+      id="rosterHint"
+      class="hint roster-hint"
+      style="display:none;"
+    ></div>
 
     <div
       class="flex-container"
@@ -243,13 +244,7 @@
 
       </div>
 
-      <p
-        style="
-          text-align:center;
-          color:#666;
-          margin-top:5px;
-        "
-      >
+      <p class="picker-intro">
         Spin the wheel to randomly select a student.
       </p>
 
@@ -316,6 +311,12 @@
           Add students to create the wheel.
         </div>
 
+        <div
+          id="pickedList"
+          class="picked-list"
+          style="display:none;"
+        ></div>
+
       </div>
 
     </div>
@@ -323,7 +324,19 @@
   </div>
 
 
-  
+  <!-- =====================================================
+       EASTER EGG OVERLAY
+       ===================================================== -->
+
+  <div
+    id="easterEgg"
+    class="easter-egg"
+    onclick="hideEasterEgg()"
+    aria-hidden="true"
+  >
+    <img id="easterEggImage" alt="">
+  </div>
+
 
   <script src="js/storage.js"></script>
   <script src="js/rules.js"></script>

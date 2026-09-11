@@ -1,948 +1,377 @@
 /* =====================================================
-       CREATE BOARD HTML
-       ===================================================== */
+   CREATE BOARD HTML
+   ===================================================== */
 
-    function createBoardHtml(
-      cell,
-      students = []
-    ) {
+function createBoardHtml(cell, students = []) {
+  const items = students
+    .map((student, index) => {
+      const uniqueId = `student-${cell.id}-${index}-${Math.random()
+        .toString(36)
+        .substring(2, 8)}`;
 
-      let html = `
+      return `
+        <li id="${uniqueId}" draggable="true" ondragstart="drag(event)">
+          ${escapeHtml(student)}
+        </li>`;
+    })
+    .join("");
 
-        <div
-          id="board-${cell.id}"
-          class="board ${cell.class}"
-          data-max="${cell.max}"
-        >
+  return `
+    <div id="board-${cell.id}" class="board ${cell.class}" data-max="${cell.max}">
+      <h3>
+        ${escapeHtml(cell.name)}
+        <span class="limit">(MAX ${cell.max})</span>
+      </h3>
+      <ul
+        id="list-${cell.id}"
+        ondragover="allowDrop(event)"
+        ondragleave="dragLeave(event)"
+        ondrop="drop(event)"
+      >${items}</ul>
+    </div>`;
+}
 
-          <h3>
-            ${escapeHtml(cell.name)}
 
-            <span class="limit">
-              (MAX ${cell.max})
-            </span>
-          </h3>
+/* =====================================================
+   RENDER ROOM
+   ===================================================== */
 
-          <ul
-            id="list-${cell.id}"
-            ondragover="allowDrop(event)"
-            ondragleave="dragLeave(event)"
-            ondrop="drop(event)"
-          >
+function renderRoom(boardsData = {}) {
+  const boards = layoutConfig
+    .map(cell => createBoardHtml(cell, boardsData[cell.id] || []))
+    .join("");
 
-      `;
+  const hasStudents = Object.values(boardsData).some(list => list.length > 0);
 
-      students.forEach(
-        (student, index) => {
+  const actions = hasStudents
+    ? `
+      <div class="results-actions">
+        <button class="secondary" onclick="copyGroups()">Copy Groups</button>
+        <span id="copyStatus" class="copy-status" aria-live="polite"></span>
+      </div>`
+    : "";
 
-          const uniqueId =
-            `student-cell.id-{index}-${Math.random()
-              .toString(36)
-              .substring(2, 8)}`;
+  document.getElementById("results").innerHTML = `
+    <div class="card">
+      <div class="results-header">
+        <h3>Room Layout Grouping:</h3>
+        ${actions}
+      </div>
+      <p class="hint">Drag a name to move a student to a different board.</p>
+      <div class="classroom-grid">${boards}</div>
+    </div>`;
 
-          html += `
+  checkAllLimits();
+}
 
-            <li
-              id="${uniqueId}"
-              draggable="true"
-              ondragstart="drag(event)"
-            >
-              ${escapeHtml(student)}
-            </li>
+function renderEmptyLayout() {
+  renderRoom({});
+}
 
-          `;
+function renderGroups(boardsData) {
+  renderRoom(boardsData);
+}
 
-        }
-      );
 
-      html += `
+/* =====================================================
+   COPY GROUPS
 
-          </ul>
+   Reads the current DOM so drag-and-drop edits are
+   included.
+   ===================================================== */
 
-        </div>
+function getGroupsFromDom() {
+  return layoutConfig
+    .map(cell => ({
+      name: cell.name,
+      students: Array.from(
+        document.querySelectorAll(`#list-${cell.id} li`)
+      ).map(li => li.textContent.trim())
+    }))
+    .filter(group => group.students.length > 0);
+}
 
-      `;
+async function copyGroups() {
+  const text = getGroupsFromDom()
+    .map(group => `${group.name}: ${group.students.join(", ")}`)
+    .join("\n");
 
-      return html;
+  const status = document.getElementById("copyStatus");
 
+  try {
+    await navigator.clipboard.writeText(text);
+    status.textContent = "Copied!";
+  } catch (error) {
+    /*
+     * The Clipboard API needs a secure context; fall back to a
+     * temporary textarea so file:// still works.
+     */
+    const scratch = document.createElement("textarea");
+    scratch.value = text;
+    scratch.setAttribute("readonly", "");
+    scratch.style.position = "fixed";
+    scratch.style.opacity = "0";
+    document.body.appendChild(scratch);
+    scratch.select();
+    const ok = document.execCommand("copy");
+    document.body.removeChild(scratch);
+    status.textContent = ok ? "Copied!" : "Copy failed";
+  }
+
+  setTimeout(() => (status.textContent = ""), 2000);
+}
+
+
+/* =====================================================
+   CHOOSE BOARDS
+
+   Boards are used in priority order: MAX-2 boards first,
+   then MAX-3 boards. We use as many boards as possible
+   (every board needs at least 2 students) and prefer
+   MAX-2 boards over MAX-3 boards.
+
+   In normal mode the chosen boards must fit everyone.
+   In override mode we simply take the top boards and
+   allow groups to exceed their MAX.
+   ===================================================== */
+
+function chooseBoards(studentCount, override) {
+  const max2Boards = layoutConfig.filter(board => board.max === 2);
+  const max3Boards = layoutConfig.filter(board => board.max === 3);
+  const prioritizedBoards = [...max2Boards, ...max3Boards];
+
+  const maxGroups = Math.min(
+    Math.floor(studentCount / 2),
+    prioritizedBoards.length
+  );
+
+  if (override) {
+    return prioritizedBoards.slice(0, maxGroups);
+  }
+
+  for (let groupCount = maxGroups; groupCount >= 1; groupCount--) {
+    /*
+     * With `twos` MAX-2 boards and the rest MAX-3, capacity is
+     * 2 * twos + 3 * (groupCount - twos). Try the most MAX-2
+     * boards first.
+     */
+    const maxTwos = Math.min(groupCount, max2Boards.length);
+    const minTwos = Math.max(0, groupCount - max3Boards.length);
+
+    for (let twos = maxTwos; twos >= minTwos; twos--) {
+      const threes = groupCount - twos;
+      const capacity = twos * 2 + threes * 3;
+
+      if (studentCount >= groupCount * 2 && studentCount <= capacity) {
+        return [
+          ...max2Boards.slice(0, twos),
+          ...max3Boards.slice(0, threes)
+        ];
+      }
     }
+  }
+
+  return null;
+}
 
 
+/* =====================================================
+   GROUP SIZES
 
-    /* =====================================================
-       EMPTY ROOM
-       ===================================================== */
+   Every group starts at 2. MAX-3 boards are filled to 3
+   first, then any remaining capacity is used. In override
+   mode extra students are spread evenly beyond MAX.
 
-    function renderEmptyLayout() {
+   Examples:
+     12 -> 2+2+2+2+2+2
+     13 -> 2+2+2+2+2+2+3
+   ===================================================== */
 
-      const results =
-        document.getElementById(
-          "results"
-        );
+function distributeGroupSizes(boards, studentCount, override) {
+  const sizes = boards.map(() => 2);
+  let remaining = studentCount - boards.length * 2;
 
-      let html = `
-
-        <div class="card">
-
-          <h3>
-            Room Layout Grouping:
-          </h3>
-
-          <div class="classroom-grid">
-
-      `;
-
-      layoutConfig.forEach(
-        cell => {
-
-          html +=
-            createBoardHtml(
-              cell
-            );
-
-        }
-      );
-
-      html += `
-
-          </div>
-
-        </div>
-
-      `;
-
-      results.innerHTML =
-        html;
-
+  for (let i = 0; i < boards.length && remaining > 0; i++) {
+    if (boards[i].max >= 3) {
+      sizes[i] = 3;
+      remaining--;
     }
+  }
 
-
-
-    /* =====================================================
-       FIND BOARD COMBINATIONS
-       ===================================================== */
-
-    function getBoardCombinations(
-      boards,
-      count
-    ) {
-
-      const results = [];
-
-      function generate(
-        start,
-        current
-      ) {
-
-        if (
-          current.length ===
-          count
-        ) {
-
-          results.push(
-            [...current]
-          );
-
-          return;
-
-        }
-
-        for (
-          let i = start;
-          i < boards.length;
-          i++
-        ) {
-
-          current.push(
-            boards[i]
-          );
-
-          generate(
-            i + 1,
-            current
-          );
-
-          current.pop();
-
-        }
-
-      }
-
-      generate(0, []);
-
-      return results;
-
-    }
-
-
-
-    /* =====================================================
-       SPLIT GROUPS
-       ===================================================== */
-
-    function splitGroups() {
-    
-      document.getElementById("errorMsg").innerText = "";
-    
-      const activeStudents = getActiveStudents();
-      const studentCount = activeStudents.length;
-    
-      const override =
-        document.getElementById("overrideCapacity").checked;
-    
-      if (studentCount < 2) {
-        document.getElementById("errorMsg").innerText =
-          "You need at least 2 students to make a group.";
-    
-        return;
-      }
-
-    
-    
-      /* =====================================================
-         BOARD PRIORITY
-    
-         MAX 2 boards first.
-         MAX 3 boards second.
-         ===================================================== */
-    
-      const max2Boards =
-        layoutConfig.filter(
-          board => board.max === 2
-        );
-    
-      const max3Boards =
-        layoutConfig.filter(
-          board => board.max === 3
-        );
-    
-      const prioritizedBoards = [
-        ...max2Boards,
-        ...max3Boards
-      ];
-
-    
-    
-      /* =====================================================
-         NORMAL MODE
-         ===================================================== */
-    
-      if (!override) {
-    
-        /*
-         * We want to use AS MANY BOARDS AS POSSIBLE.
-         *
-         * A board requires at least 2 students.
-         *
-         * Therefore:
-         *
-         * maximum possible groups =
-         * floor(students / 2)
-         *
-         * but we cannot exceed the number of boards.
-         */
-    
-        let groupCount =
-          Math.min(
-            Math.floor(studentCount / 2),
-            prioritizedBoards.length
-          );
-    
-    
-        /*
-         * Find the largest number of groups that
-         * can actually hold everyone.
-         *
-         * Start with the maximum and decrease
-         * only if necessary.
-         */
-    
-        let selectedBoards = null;
-    
-        while (
-          groupCount >= 1
-        ) {
-    
-          /*
-           * Try using the first boards in priority order.
-           *
-           * MAX 2 boards come first.
-           */
-    
-          const boards =
-            prioritizedBoards.slice(
-              0,
-              groupCount
-            );
-    
-    
-          const minimumCapacity =
-            groupCount * 2;
-    
-    
-          const maximumCapacity =
-            boards.reduce(
-              (total, board) =>
-                total + board.max,
-              0
-            );
-    
-    
-          /*
-           * Can these boards hold everyone?
-           */
-    
-          if (
-            studentCount >= minimumCapacity &&
-            studentCount <= maximumCapacity
-          ) {
-    
-            selectedBoards = boards;
-    
-            break;
-          }
-    
-    
-          /*
-           * If not, use one fewer group.
-           */
-    
-          groupCount--;
-    
-        }
-    
-    
-        /*
-         * If the priority boards couldn't make
-         * the arrangement work, search for another
-         * valid combination with the SAME group count.
-         */
-    
-        if (!selectedBoards) {
-    
-          groupCount =
-            Math.min(
-              Math.floor(studentCount / 2),
-              prioritizedBoards.length
-            );
-    
-    
-          while (
-            groupCount >= 1 &&
-            !selectedBoards
-          ) {
-    
-            const combinations =
-              getBoardCombinations(
-                prioritizedBoards,
-                groupCount
-              );
-    
-    
-            /*
-             * Sort combinations so ones containing
-             * more MAX-2 boards are preferred.
-             */
-    
-            combinations.sort(
-              (a, b) => {
-    
-                const aMax2 =
-                  a.filter(
-                    board => board.max === 2
-                  ).length;
-    
-                const bMax2 =
-                  b.filter(
-                    board => board.max === 2
-                  ).length;
-    
-                return bMax2 - aMax2;
-    
-              }
-            );
-    
-    
-            for (
-              const combination of combinations
-            ) {
-    
-              const capacity =
-                combination.reduce(
-                  (total, board) =>
-                    total + board.max,
-                  0
-                );
-    
-    
-              if (
-                studentCount >= groupCount * 2 &&
-                studentCount <= capacity
-              ) {
-    
-                selectedBoards =
-                  combination.sort(
-                    (a, b) =>
-                      prioritizedBoards.indexOf(a) -
-                      prioritizedBoards.indexOf(b)
-                  );
-    
-                break;
-              }
-    
-            }
-    
-    
-            if (!selectedBoards) {
-              groupCount--;
-            }
-    
-          }
-    
-        }
-    
-    
-        /*
-         * No valid arrangement.
-         */
-    
-        if (!selectedBoards) {
-    
-          const totalCapacity =
-            prioritizedBoards.reduce(
-              (total, board) =>
-                total + board.max,
-              0
-            );
-    
-    
-          document.getElementById(
-            "errorMsg"
-          ).innerText =
-            `Cannot fit ${studentCount} students. ` +
-            `The room has ${totalCapacity} total seats. ` +
-            `Enable "Override capacity" to continue.`;
-    
-          return;
-        }
-
-    
-    
-        /* =====================================================
-           SHUFFLE STUDENTS
-           ===================================================== */
-    
-        const students =
-          shuffle(activeStudents);
-
-    
-    
-        /* =====================================================
-           INITIAL GROUP SIZES
-           
-           Every group starts with 2.
-           ===================================================== */
-    
-        const groupSizes =
-          new Array(
-            selectedBoards.length
-          ).fill(2);
-    
-    
-        let remaining =
-          studentCount -
-          selectedBoards.length * 2;
-
-    
-    
-        /* =====================================================
-           FILL MAX-3 BOARDS TO 3
-           
-           MAX-2 boards stay at 2.
-           
-           This gives results like:
-           
-           12:
-           2 + 2 + 2 + 2 + 2 + 2
-           
-           13:
-           2 + 2 + 2 + 2 + 2 + 2 + 3
-           
-           33:
-           2 + 2 + 2 + 2 + 2 + 2
-           + 3 + 3 + 3 + 3 + 3 + 3 + 3 + 3 + 3
-           ===================================================== */
-    
-        for (
-          let i = 0;
-          i < selectedBoards.length &&
-          remaining > 0;
-          i++
-        ) {
-    
-          if (
-            selectedBoards[i].max >= 3
-          ) {
-    
-            groupSizes[i] = 3;
-    
-            remaining--;
-    
-          }
-    
-        }
-
-    
-    
-        /* =====================================================
-           EXTRA CAPACITY
-           
-           This is mainly a safety fallback for future boards
-           with MAX values greater than 3.
-           ===================================================== */
-    
-        while (
-          remaining > 0
-        ) {
-    
-          let added = false;
-    
-    
-          for (
-            let i = 0;
-            i < selectedBoards.length;
-            i++
-          ) {
-    
-            if (
-              groupSizes[i] <
-              selectedBoards[i].max
-            ) {
-    
-              groupSizes[i]++;
-    
-              remaining--;
-    
-              added = true;
-    
-    
-              if (
-                remaining === 0
-              ) {
-                break;
-              }
-    
-            }
-    
-          }
-    
-    
-          /*
-           * Prevent infinite loops.
-           */
-    
-          if (!added) {
-            break;
-          }
-    
-        }
-
-    
-    
-        /* =====================================================
-           ASSIGN STUDENTS WITH SAVED WHITEBOARD RULES
-           ===================================================== */
-
-        const boardsData =
-          assignStudentsWithWhiteboardRules(
-            selectedBoards,
-            groupSizes,
-            students
-          );
-
-        if (!boardsData) {
-          document.getElementById("errorMsg").innerText =
-            "The saved whiteboard rules cannot be satisfied with the available group sizes. Remove or change a rule and try again.";
-          return;
-        }
-
-        renderGroups(
-          boardsData
-        );
-
-        return;
-      }
-
-    
-    
-      /* =====================================================
-         OVERRIDE MODE
-         
-         Override also tries to maximize the number
-         of used groups.
-         ===================================================== */
-    
-      const students =
-        shuffle(activeStudents);
-    
-    
-      /*
-       * Maximum possible groups based on 2 per group.
-       */
-    
-      let groupCount =
-        Math.min(
-          Math.floor(studentCount / 2),
-          prioritizedBoards.length
-        );
-    
-    
-      /*
-       * Select the highest-priority boards.
-       */
-    
-      const selectedBoards =
-        prioritizedBoards.slice(
-          0,
-          groupCount
-        );
-    
-    
-      /*
-       * Start every group with 2.
-       */
-    
-      const groupSizes =
-        new Array(
-          groupCount
-        ).fill(2);
-    
-    
-      let remaining =
-        studentCount -
-        groupCount * 2;
-    
-    
-      /*
-       * Fill MAX-3 boards to 3 first.
-       */
-    
-      for (
-        let i = 0;
-        i < groupCount &&
-        remaining > 0;
-        i++
-      ) {
-    
-        if (
-          selectedBoards[i].max >= 3
-        ) {
-    
-          groupSizes[i]++;
-    
-          remaining--;
-    
-        }
-    
-      }
-    
-    
-      /*
-       * Override allows additional students
-       * beyond the normal MAX.
-       *
-       * Distribute them evenly.
-       */
-    
-      let position = 0;
-    
-    
-      while (
-        remaining > 0
-      ) {
-    
-        groupSizes[position]++;
-    
+  /*
+   * Fallback for boards with MAX greater than 3.
+   */
+  let added = true;
+  while (remaining > 0 && added) {
+    added = false;
+    for (let i = 0; i < boards.length && remaining > 0; i++) {
+      if (sizes[i] < boards[i].max) {
+        sizes[i]++;
         remaining--;
-    
-        position++;
-    
-    
-        if (
-          position >= groupCount
-        ) {
-    
-          position = 0;
-    
-        }
-    
+        added = true;
       }
-
-    
-    
-      /* =====================================================
-         ASSIGN STUDENTS WITH SAVED WHITEBOARD RULES
-         ===================================================== */
-
-      const boardsData =
-        assignStudentsWithWhiteboardRules(
-          selectedBoards,
-          groupSizes,
-          students
-        );
-
-      if (!boardsData) {
-        document.getElementById("errorMsg").innerText =
-          "The saved whiteboard rules cannot be satisfied with the available group sizes. Remove or change a rule and try again.";
-        return;
-      }
-
-      renderGroups(
-        boardsData
-      );
     }
+  }
 
-
-    /* =====================================================
-       RENDER GROUPS
-       ===================================================== */
-
-    function renderGroups(
-      boardsData
-    ) {
-
-      let html = `
-
-        <div class="card">
-
-          <h3>
-            Room Layout Grouping:
-          </h3>
-
-          <div class="classroom-grid">
-
-      `;
-
-      layoutConfig.forEach(
-        cell => {
-
-          html +=
-            createBoardHtml(
-              cell,
-              boardsData[
-                cell.id
-              ] || []
-            );
-
-        }
-      );
-
-      html += `
-
-          </div>
-
-        </div>
-
-      `;
-
-      document.getElementById(
-        "results"
-      ).innerHTML =
-        html;
-
-      checkAllLimits();
-
+  if (override) {
+    for (let i = 0; remaining > 0; i = (i + 1) % boards.length) {
+      sizes[i]++;
+      remaining--;
     }
+  }
+
+  return sizes;
+}
 
 
+/* =====================================================
+   SPLIT GROUPS
+   ===================================================== */
 
-    /* =====================================================
-       DRAG
-       ===================================================== */
+function splitGroups() {
+  showError("");
 
-    function drag(ev) {
+  const activeStudents = getActiveStudents();
+  const studentCount = activeStudents.length;
+  const override = document.getElementById("overrideCapacity").checked;
 
-      ev.dataTransfer.setData(
-        "text/plain",
-        ev.target.id
-      );
+  if (studentCount < 2) {
+    showError("You need at least 2 students to make a group.");
+    return;
+  }
 
-      ev.dataTransfer.effectAllowed =
-        "move";
+  const selectedBoards = chooseBoards(studentCount, override);
 
-    }
+  if (!selectedBoards) {
+    const totalCapacity = layoutConfig.reduce((total, b) => total + b.max, 0);
+    showError(
+      `Cannot fit ${studentCount} students. ` +
+      `The room has ${totalCapacity} total seats. ` +
+      `Enable "Override capacity" to continue.`
+    );
+    return;
+  }
 
+  const groupSizes = distributeGroupSizes(selectedBoards, studentCount, override);
 
+  const boardsData = assignStudentsWithWhiteboardRules(
+    selectedBoards,
+    groupSizes,
+    shuffle(activeStudents)
+  );
 
-    /* =====================================================
-       ALLOW DROP
-       ===================================================== */
+  if (!boardsData) {
+    showError(
+      "The saved whiteboard rules cannot be satisfied with the available " +
+      "group sizes. Remove or change a rule and try again."
+    );
+    return;
+  }
 
-    function allowDrop(ev) {
-
-      ev.preventDefault();
-
-      const board =
-        ev.target.closest(
-          ".board"
-        );
-
-      if (!board) {
-        return;
-      }
-
-      board.classList.add(
-        "drag-over"
-      );
-
-    }
-
-
-
-    /* =====================================================
-       DRAG LEAVE
-       ===================================================== */
-
-    function dragLeave(ev) {
-
-      const board =
-        ev.target.closest(
-          ".board"
-        );
-
-      if (board) {
-
-        board.classList.remove(
-          "drag-over"
-        );
-
-      }
-
-    }
+  renderGroups(boardsData);
+  maybeShowEasterEgg();
+}
 
 
+/* =====================================================
+   EASTER EGG
 
-    /* =====================================================
-       DROP
-       ===================================================== */
+   Occasionally flashes an image after groups are made.
+   Put the image at `easterEgg.image` (see README).
+   ===================================================== */
 
-    function drop(ev) {
+const easterEgg = {
+  image: "img/chad-potential.png",
+  chance: 1 / 15,
+  durationMs: 3000
+};
 
-      ev.preventDefault();
+let easterEggTimer = null;
 
-      const board =
-        ev.target.closest(
-          ".board"
-        );
+function maybeShowEasterEgg() {
+  if (Math.random() >= easterEgg.chance) return;
+  showEasterEgg();
+}
 
-      if (!board) {
-        return;
-      }
+function showEasterEgg() {
+  const overlay = document.getElementById("easterEgg");
+  const image = document.getElementById("easterEggImage");
+  if (!overlay || !image) return;
 
-      board.classList.remove(
-        "drag-over"
-      );
+  image.src = easterEgg.image;
+  overlay.classList.add("open");
 
-      const studentId =
-        ev.dataTransfer.getData(
-          "text/plain"
-        );
+  clearTimeout(easterEggTimer);
+  easterEggTimer = setTimeout(hideEasterEgg, easterEgg.durationMs);
+}
 
-      const student =
-        document.getElementById(
-          studentId
-        );
-
-      if (!student) {
-        return;
-      }
-
-      const list =
-        board.querySelector(
-          "ul"
-        );
-
-      const max =
-        parseInt(
-          board.dataset.max,
-          10
-        );
-
-      const currentCount =
-        list.querySelectorAll(
-          "li"
-        ).length;
-
-      const override =
-        document.getElementById(
-          "overrideCapacity"
-        ).checked;
-
-      if (
-        !override &&
-        student.parentElement !== list &&
-        currentCount >= max
-      ) {
-
-        board.classList.remove(
-          "over-limit"
-        );
-
-        return;
-
-      }
-
-      list.appendChild(
-        student
-      );
-
-      checkAllLimits();
-
-    }
+function hideEasterEgg() {
+  clearTimeout(easterEggTimer);
+  const overlay = document.getElementById("easterEgg");
+  if (overlay) overlay.classList.remove("open");
+}
 
 
+/* =====================================================
+   DRAG AND DROP
+   ===================================================== */
 
-    /* =====================================================
-       CHECK BOARD LIMITS
-       ===================================================== */
+function drag(ev) {
+  ev.dataTransfer.setData("text/plain", ev.target.id);
+  ev.dataTransfer.effectAllowed = "move";
+}
 
-    function checkAllLimits() {
+function allowDrop(ev) {
+  ev.preventDefault();
+  const board = ev.target.closest(".board");
+  if (board) board.classList.add("drag-over");
+}
 
-      document
-        .querySelectorAll(
-          ".board"
-        )
-        .forEach(
-          board => {
+function dragLeave(ev) {
+  const board = ev.target.closest(".board");
+  if (board) board.classList.remove("drag-over");
+}
 
-            const max =
-              parseInt(
-                board.dataset.max,
-                10
-              );
+function drop(ev) {
+  ev.preventDefault();
 
-            const currentCount =
-              board.querySelectorAll(
-                "ul li"
-              ).length;
+  const board = ev.target.closest(".board");
+  if (!board) return;
 
-            if (
-              currentCount > max
-            ) {
+  board.classList.remove("drag-over");
 
-              board.classList.add(
-                "over-limit"
-              );
+  const student = document.getElementById(
+    ev.dataTransfer.getData("text/plain")
+  );
+  if (!student) return;
 
-            } else {
+  const list = board.querySelector("ul");
+  const max = parseInt(board.dataset.max, 10);
+  const currentCount = list.querySelectorAll("li").length;
+  const override = document.getElementById("overrideCapacity").checked;
 
-              board.classList.remove(
-                "over-limit"
-              );
+  if (!override && student.parentElement !== list && currentCount >= max) {
+    const name = board.querySelector("h3").firstChild.textContent.trim();
+    showError(
+      `${name} is full (MAX ${max}). Enable "Override capacity" to exceed it.`
+    );
+    return;
+  }
 
-            }
+  showError("");
+  list.appendChild(student);
+  checkAllLimits();
+}
 
-          }
-        );
 
-    }
+/* =====================================================
+   CHECK BOARD LIMITS
+   ===================================================== */
+
+function checkAllLimits() {
+  document.querySelectorAll(".board").forEach(board => {
+    const max = parseInt(board.dataset.max, 10);
+    const currentCount = board.querySelectorAll("ul li").length;
+    board.classList.toggle("over-limit", currentCount > max);
+  });
+}
