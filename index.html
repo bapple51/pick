@@ -18,6 +18,20 @@
 <body>
 
 
+  <div class="ai-banner" role="status">
+    <span class="ai-banner-badge">NEW</span>
+    <span class="ai-banner-text">
+      🚀 Introducing <strong>✨ Gemini AI Seating™</strong> — the same seating chart,
+      now with AI. Weids-grade confidence included.
+    </span>
+    <button class="ai-banner-button" onclick="aiSplitGroups()">
+      ✨ Try AI Seating
+    </button>
+    <button class="ai-banner-button ghost" onclick="openChatModal()">
+      Ask Gemini
+    </button>
+  </div>
+
   <div class="top-bar">
     <div class="class-switcher">
       <label for="classSelect">Class:</label>
@@ -103,9 +117,18 @@
       </button>
 
       <button
-        onclick="splitGroups()"
+        class="ai-button"
+        onclick="aiSplitGroups()"
       >
-        Make Groups
+        ✨ Gemini AI Seating
+      </button>
+
+      <button
+        class="secondary legacy-button"
+        onclick="splitGroups()"
+        title="Manual. No AI. Gemini will hear about this."
+      >
+        Make Groups (Legacy)
       </button>
 
       <label class="override-toggle">
@@ -328,25 +351,26 @@
        AI CHAT LAUNCHER
        ===================================================== -->
 
-  <div class="card picker-launch-card">
+  <div class="card picker-launch-card ai-card">
 
     <div>
 
       <h3>
-        AI Assistant
+        ✨ Gemini
       </h3>
 
       <p>
-        Ask Gemini for warm-up problems, explanations, or wording help.
+        Ask Gemini anything. Warm-ups, explanations, and unsolicited
+        opinions about your seating chart.
       </p>
 
     </div>
 
     <button
-      class="open-picker-button"
+      class="open-picker-button ai-button"
       onclick="openChatModal()"
     >
-      Open AI Chat
+      ✨ Ask Gemini
     </button>
 
   </div>
@@ -372,7 +396,7 @@
       <div class="picker-modal-header">
 
         <h2 id="chatModalTitle">
-          AI Assistant
+          ✨ Gemini
         </h2>
 
         <button
@@ -400,7 +424,7 @@
           id="chatInput"
           class="chat-input"
           rows="2"
-          placeholder="Ask anything... (Enter to send, Shift+Enter for a new line)"
+          placeholder="Ask Gemini... (Enter to send, Shift+Enter for a new line)"
           onkeydown="handleChatInputKeydown(event)"
         ></textarea>
 
@@ -425,30 +449,63 @@
 
       </form>
 
-      <details class="chat-settings">
-
-        <summary>Settings</summary>
-
-        <label for="chatEndpoint">
-          Proxy URL
-        </label>
-
-        <input
-          id="chatEndpoint"
-          type="url"
-          placeholder="https://your-app.vercel.app/api/chat"
-          onchange="saveChatEndpoint()"
-        >
-
-        <p class="hint">
-          Leave blank to use <code>/api/chat</code> on this site
-          (works when the whole repo is deployed to Vercel).
-        </p>
-
-      </details>
 
     </div>
 
+  </div>
+
+
+  <!-- =====================================================
+       AI NAG TOAST
+       ===================================================== -->
+
+  <div id="nagToast" class="nag-toast" role="status">
+    <span class="nag-toast-icon">✨</span>
+    <span id="nagToastText" class="nag-toast-text"></span>
+    <button class="nag-toast-button" onclick="openChatModal()">
+      Ask Gemini
+    </button>
+    <button
+      class="nag-toast-close"
+      onclick="dismissNagToast()"
+      aria-label="Remind me later"
+      title="Remind me later (it will)"
+    >
+      &times;
+    </button>
+  </div>
+
+
+  <!-- =====================================================
+       FLOATING GEMINI BUTTON
+       ===================================================== -->
+
+  <button
+    class="ai-fab"
+    onclick="openChatModal()"
+    aria-label="Ask Gemini"
+  >
+    ✨ Ask Gemini
+  </button>
+
+
+  <!-- =====================================================
+       AI SEATING OVERLAY
+       ===================================================== -->
+
+  <div id="aiSeatingOverlay" class="ai-overlay" aria-live="polite">
+    <div class="ai-overlay-content">
+      <div class="ai-overlay-title">✨ Gemini AI Seating™</div>
+      <div id="aiSeatingStatus" class="ai-overlay-status">
+        Initializing…
+      </div>
+      <div class="ai-overlay-track">
+        <div id="aiSeatingBar" class="ai-overlay-bar"></div>
+      </div>
+      <div class="ai-overlay-footnote">
+        Powered by AI. Definitely not just the other button.
+      </div>
+    </div>
   </div>
 
 

@@ -11,9 +11,12 @@ A single-page, no-build classroom tool for teachers:
 - **Random student picker** – a spinning wheel that picks a student, with an
   optional no-repeat mode that remembers who has already been called on.
 
-- **AI assistant** - a Gemini-backed chat for warm-ups, explanations and
-  wording help. The API key lives in a tiny Vercel serverless proxy
-  (`api/chat.js`), never in the page.
+- **Gemini ✨** - an AI chat with the "Weids" persona (a looksmaxxing-guru
+  parody; see `api/weids-prompt.js`). Branded as Gemini in the UI, and the UI
+  is deliberately obnoxious about it: a banner, a pulsing floating button, a
+  nag toast that keeps coming back, and **✨ Gemini AI Seating** - a dramatic
+  progress overlay that then runs the exact same random splitter as the
+  "Legacy" button and asks Gemini for a one-line verdict.
 
 Rosters, rules, pick history and chat history are stored in the browser's
 `localStorage`. The only server component is the optional chat proxy.
@@ -24,31 +27,32 @@ Open `index.html` in a browser (or serve the folder with any static server).
 No build step or dependencies. The AI chat needs the proxy below; everything
 else works without it.
 
-## Deploying the AI chat proxy (Vercel)
+## The AI proxy (Vercel)
 
-The repo is public, so the Gemini key must not be committed. `api/chat.js` is
-a Vercel serverless function that reads the key from an environment variable
-and forwards chat requests to Gemini.
+The site is served from GitHub Pages; the chat calls a proxy baked into
+`js/chat.js` (`chatConfig.endpoint`, currently
+`https://pick-rose.vercel.app/api/chat`). Users cannot change it. `api/chat.js`
+is a Vercel serverless function that reads the Gemini key from an environment
+variable and forwards chat requests, with `api/weids-prompt.js` as the system
+prompt.
 
 1. Get a key from [Google AI Studio](https://aistudio.google.com/apikey).
 2. On [vercel.com](https://vercel.com) choose **Add New > Project** and import
    this repository. Framework preset: **Other**; no build command.
 3. Under **Environment Variables** add `GEMINI_API_KEY`. Optional:
-   `GEMINI_MODEL` (default `gemini-2.5-flash`) and `ALLOWED_ORIGINS`
+   `GEMINI_MODEL` (default `gemini-3.6-flash`) and `ALLOWED_ORIGINS`
    (comma-separated origins allowed to call the proxy, e.g.
    `https://bapple51.github.io`).
-4. Deploy. Vercel serves the site *and* `/api/chat` from the same URL, so the
-   chat works out of the box there.
+4. Deploy, then put the deployment's `/api/chat` URL in `chatConfig.endpoint`
+   in `js/chat.js` if it differs from the current one.
 
-If you host the page somewhere else (e.g. GitHub Pages), open the chat's
-**Settings** and paste the proxy URL
-(`https://<your-project>.vercel.app/api/chat`). It is saved in the browser.
-Set `ALLOWED_ORIGINS` on Vercel to your page's origin so other sites cannot
-use your key through the proxy.
+Set `ALLOWED_ORIGINS` on Vercel to the Pages origin (e.g.
+`https://bapple51.github.io`) so other sites cannot use your key through the
+proxy.
 
 The proxy caps history at 30 messages, 4000 characters per message and 1024
-output tokens per reply. It does not send any roster data - only what you
-type into the chat.
+output tokens per reply. No roster data is sent - only what you type into the
+chat, and (for the AI Seating verdict) the number of students and groups.
 
 ## Usage
 
@@ -92,8 +96,9 @@ type into the chat.
 | `js/rules.js` | Whiteboard rules UI and the rule-aware group assignment |
 | `js/seating.js` | Board selection, group sizing, rendering, drag-and-drop |
 | `js/picker.js` | Wheel drawing, spinning, pick history |
-| `js/chat.js` | AI chat UI; talks to the proxy |
+| `js/chat.js` | Gemini chat UI, nag toast, AI Seating theatre |
 | `api/chat.js` | Vercel serverless function proxying to Gemini |
+| `api/weids-prompt.js` | The system prompt (Weids persona) |
 | `js/app.js` | Page bootstrap |
 
 Scripts are plain globals loaded in dependency order; there is no module

@@ -9,7 +9,7 @@
    Variables):
 
      GEMINI_API_KEY    required
-     GEMINI_MODEL      optional, default "gemini-2.5-flash"
+     GEMINI_MODEL      optional, default "gemini-3.6-flash"
      ALLOWED_ORIGINS   optional, comma-separated origins
                        allowed to call this endpoint, e.g.
                        "https://bapple51.github.io". Leave
@@ -20,17 +20,15 @@
    Response: { reply: "..." }  or  { error: "..." }
    ===================================================== */
 
-const DEFAULT_MODEL = "gemini-2.5-flash";
+const DEFAULT_MODEL = "gemini-3.6-flash";
 const MAX_MESSAGES = 30;
 const MAX_MESSAGE_CHARS = 4000;
 const MAX_OUTPUT_TOKENS = 1024;
 
 const SYSTEM_PROMPT =
-  "You are a friendly, concise assistant built into a classroom helper " +
-  "app used by a high-school teacher. Help with lesson ideas, warm-up " +
-  "problems, explanations, wording for instructions, and quick questions. " +
-  "Use plain language and short Markdown (bold, lists, code blocks) only " +
-  "when it helps.";
+  require("./weids-prompt.js") +
+  "\n\n## Name\n\nIn this app you are presented to users as \"Gemini\". " +
+  "Answer to that name. Everything else about the persona is unchanged.";
 
 function parseAllowedOrigins() {
   return (process.env.ALLOWED_ORIGINS || "")

@@ -36,7 +36,7 @@ function createBoardHtml(cell, students = []) {
    RENDER ROOM
    ===================================================== */
 
-function renderRoom(boardsData = {}) {
+function renderRoom(boardsData = {}, options = {}) {
   const boards = layoutConfig
     .map(cell => createBoardHtml(cell, boardsData[cell.id] || []))
     .join("");
@@ -51,12 +51,25 @@ function renderRoom(boardsData = {}) {
       </div>`
     : "";
 
+  const badge = options.ai
+    ? `<span class="ai-badge" title="Identical to the legacy button, but AI.">✨ Gemini-Optimized</span>`
+    : hasStudents
+      ? `<span class="legacy-badge" title="Not AI. Gemini is disappointed.">Legacy</span>`
+      : "";
+
+  const verdict = options.ai
+    ? `<div class="ai-verdict"><span class="ai-verdict-label">✨ Gemini says:</span> <span id="aiVerdict">…</span></div>`
+    : hasStudents
+      ? `<div class="ai-verdict muted">Psst — ✨ Gemini AI Seating would have done this with 100% more AI.</div>`
+      : "";
+
   document.getElementById("results").innerHTML = `
-    <div class="card">
+    <div class="card${options.ai ? " ai-card" : ""}">
       <div class="results-header">
-        <h3>Room Layout Grouping:</h3>
+        <h3>Room Layout Grouping: ${badge}</h3>
         ${actions}
       </div>
+      ${verdict}
       <p class="hint">Drag a name to move a student to a different board.</p>
       <div class="classroom-grid">${boards}</div>
     </div>`;
@@ -68,8 +81,8 @@ function renderEmptyLayout() {
   renderRoom({});
 }
 
-function renderGroups(boardsData) {
-  renderRoom(boardsData);
+function renderGroups(boardsData, options) {
+  renderRoom(boardsData, options);
 }
 
 
@@ -228,7 +241,11 @@ function distributeGroupSizes(boards, studentCount, override) {
    SPLIT GROUPS
    ===================================================== */
 
-function splitGroups() {
+/*
+ * Returns true when groups were rendered. `options.ai` only
+ * changes the decoration - the algorithm is identical.
+ */
+function splitGroups(options = {}) {
   showError("");
 
   const activeStudents = getActiveStudents();
@@ -237,7 +254,7 @@ function splitGroups() {
 
   if (studentCount < 2) {
     showError("You need at least 2 students to make a group.");
-    return;
+    return false;
   }
 
   const selectedBoards = chooseBoards(studentCount, override);
@@ -249,7 +266,7 @@ function splitGroups() {
       `The room has ${totalCapacity} total seats. ` +
       `Enable "Override capacity" to continue.`
     );
-    return;
+    return false;
   }
 
   const groupSizes = distributeGroupSizes(selectedBoards, studentCount, override);
@@ -265,11 +282,12 @@ function splitGroups() {
       "The saved whiteboard rules cannot be satisfied with the available " +
       "group sizes. Remove or change a rule and try again."
     );
-    return;
+    return false;
   }
 
-  renderGroups(boardsData);
+  renderGroups(boardsData, options);
   maybeShowEasterEgg();
+  return true;
 }
 
 
