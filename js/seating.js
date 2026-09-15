@@ -242,39 +242,53 @@ function distributeGroupSizes(boards, studentCount, override) {
    ===================================================== */
 
 /*
- * Returns true when groups were rendered. `options.ai` only
- * changes the decoration - the algorithm is identical.
+ * Work out which boards to use and how big each group is for
+ * today's students. Returns { students, boards, sizes } or
+ * shows an error and returns null. Shared by the legacy and
+ * AI paths so both produce the same shape of plan.
  */
-function splitGroups(options = {}) {
+function planGroups() {
   showError("");
 
-  const activeStudents = getActiveStudents();
-  const studentCount = activeStudents.length;
+  const students = getActiveStudents();
+  const studentCount = students.length;
   const override = document.getElementById("overrideCapacity").checked;
 
   if (studentCount < 2) {
     showError("You need at least 2 students to make a group.");
-    return false;
+    return null;
   }
 
-  const selectedBoards = chooseBoards(studentCount, override);
+  const boards = chooseBoards(studentCount, override);
 
-  if (!selectedBoards) {
+  if (!boards) {
     const totalCapacity = layoutConfig.reduce((total, b) => total + b.max, 0);
     showError(
       `Cannot fit ${studentCount} students. ` +
       `The room has ${totalCapacity} total seats. ` +
       `Enable "Override capacity" to continue.`
     );
-    return false;
+    return null;
   }
 
-  const groupSizes = distributeGroupSizes(selectedBoards, studentCount, override);
+  const sizes = distributeGroupSizes(boards, studentCount, override);
+
+  return { students, boards, sizes };
+}
+
+/*
+ * Legacy path: local random assignment. Returns true when
+ * groups were rendered. `options.ai` only changes the
+ * decoration (used when the AI path falls back to this).
+ */
+function splitGroups(options = {}) {
+  const plan = planGroups();
+  if (!plan) return false;
 
   const boardsData = assignStudentsWithWhiteboardRules(
-    selectedBoards,
-    groupSizes,
-    shuffle(activeStudents)
+    plan.boards,
+    plan.sizes,
+    shuffle(plan.students)
   );
 
   if (!boardsData) {

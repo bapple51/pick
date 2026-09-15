@@ -283,10 +283,13 @@ function dismissNagToast() {
 /* =====================================================
    AI SEATING ✨
 
-   Shows a very serious progress overlay, then calls the
-   exact same random splitter as the legacy button. Then
-   asks Gemini for a one-line verdict (no student data is
-   sent - only the counts).
+   Sends today's students, the boards with their exact
+   group sizes, and the active rules to Gemini, which
+   returns the assignment plus a one-line verdict. The
+   plan is validated here (every student once, sizes
+   exact, rules honoured); if Gemini fumbles it, the
+   legacy algorithm quietly does the job and the verdict
+   admits it.
    ===================================================== */
 
 const aiSeatingLines = [
@@ -300,12 +303,110 @@ const aiSeatingLines = [
   "Finalizing optimal seating…"
 ];
 
+const AI_SEATING_MIN_MS = 1500;
+
 let aiSeatingRunning = false;
 
-function aiSplitGroups() {
-  if (aiSeatingRunning) return;
-  aiSeatingRunning = true;
+async function requestAiSeating(plan, rules) {
+  const response = await fetch(chatConfig.endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      mode: "seating",
+      students: plan.students,
+      boards: plan.boards.map((board, i) => ({
+        id: board.id,
+        name: board.name,
+        size: plan.sizes[i]
+      })),
+      rules
+    })
+  });
 
+  let data = {};
+  try {
+    data = await response.json();
+  } catch (error) {
+    /* handled below */
+  }
+
+  if (!response.ok || !Array.isArray(data.assignments)) {
+    throw new Error(data.error || `Gemini returned ${response.status}.`);
+  }
+
+  return data;
+}
+
+/*
+ * Turn Gemini's assignments into { boardId: [names] } using the
+ * canonical spellings, or return null if anything is off.
+ */
+function validateAiAssignments(assignments, plan, rules) {
+  const lower = s => String(s).trim().toLowerCase();
+
+  const canonical = new Map(plan.students.map(s => [lower(s), s]));
+  const boardByKey = new Map();
+  const sizeById = new Map();
+
+  plan.boards.forEach((board, i) => {
+    boardByKey.set(lower(board.id), board.id);
+    boardByKey.set(lower(board.name), board.id);
+    sizeById.set(board.id, plan.sizes[i]);
+  });
+
+  const result = {};
+  const placed = new Map();
+
+  for (const entry of assignments) {
+    if (!entry || !Array.isArray(entry.students)) return null;
+
+    const boardId = boardByKey.get(lower(entry.board));
+    if (!boardId || result[boardId]) return null;
+
+    const names = [];
+    for (const raw of entry.students) {
+      const name = canonical.get(lower(raw));
+      if (!name || placed.has(name)) return null;
+      placed.set(name, boardId);
+      names.push(name);
+    }
+
+    if (names.length !== sizeById.get(boardId)) return null;
+    result[boardId] = names;
+  }
+
+  if (placed.size !== plan.students.length) return null;
+  if (Object.keys(result).length !== plan.boards.length) return null;
+
+  for (const rule of rules) {
+    const boards = rule.students.map(s => placed.get(canonical.get(lower(s))));
+    if (boards.some(b => !b)) return null;
+    const distinct = new Set(boards).size;
+    if (rule.type === "together" && distinct !== 1) return null;
+    if (rule.type === "apart" && distinct !== boards.length) return null;
+  }
+
+  layoutConfig.forEach(board => {
+    if (!result[board.id]) result[board.id] = [];
+  });
+
+  return result;
+}
+
+function setAiVerdict(text) {
+  const verdict = document.getElementById("aiVerdict");
+  if (verdict) verdict.textContent = text;
+}
+
+async function aiSplitGroups() {
+  if (aiSeatingRunning) return;
+
+  const plan = planGroups();
+  if (!plan) return;
+
+  const rules = validateWhiteboardRules(plan.students);
+
+  aiSeatingRunning = true;
   hideNagToast();
 
   const overlay = document.getElementById("aiSeatingOverlay");
@@ -313,54 +414,55 @@ function aiSplitGroups() {
   const bar = document.getElementById("aiSeatingBar");
 
   overlay.classList.add("open");
-  bar.style.width = "0%";
+  bar.style.width = "5%";
 
-  const totalMs = 2200 + Math.random() * 800;
-  const stepMs = totalMs / aiSeatingLines.length;
   let step = 0;
+  const ticker = setInterval(() => {
+    status.textContent = aiSeatingLines[step % aiSeatingLines.length];
+    bar.style.width = `${Math.min(90, 10 + step * 10)}%`;
+    step++;
+  }, 550);
+  status.textContent = aiSeatingLines[0];
 
-  const tick = () => {
-    if (step < aiSeatingLines.length) {
-      status.textContent = aiSeatingLines[step];
-      bar.style.width = `${Math.round(((step + 1) / aiSeatingLines.length) * 100)}%`;
-      step++;
-      setTimeout(tick, stepMs);
-      return;
-    }
-
-    overlay.classList.remove("open");
-    aiSeatingRunning = false;
-
-    const ok = splitGroups({ ai: true });
-    if (ok) fetchAiVerdict();
-  };
-
-  tick();
-}
-
-async function fetchAiVerdict() {
-  const verdict = document.getElementById("aiVerdict");
-  if (!verdict) return;
-
-  const groups = getGroupsFromDom();
-  const studentCount = groups.reduce((n, g) => n + g.students.length, 0);
-
-  verdict.textContent = "Gemini ✨ is reviewing the arrangement…";
+  const startedAt = Date.now();
+  let boardsData = null;
+  let comment = "";
+  let failure = "";
 
   try {
-    const reply = await askGemini([
-      {
-        role: "user",
-        content:
-          `You just "AI-optimized" a classroom seating chart: ${studentCount} ` +
-          `students into ${groups.length} whiteboard groups. Give a one-sentence ` +
-          `verdict on your own work, in character. Do not mention or invent any names.`
-      }
-    ]);
-    verdict.textContent = reply.split("\n")[0].slice(0, 240);
+    const data = await requestAiSeating(plan, rules);
+    boardsData = validateAiAssignments(data.assignments, plan, rules);
+    comment = (data.comment || "").trim();
+    if (!boardsData) failure = "returned a plan that broke the rules";
   } catch (error) {
-    verdict.textContent =
-      "Gemini ✨ is unavailable, which is the first mistake this seating chart has made.";
+    failure = `was unavailable (${error.message})`;
+  }
+
+  const elapsed = Date.now() - startedAt;
+  if (elapsed < AI_SEATING_MIN_MS) {
+    await new Promise(r => setTimeout(r, AI_SEATING_MIN_MS - elapsed));
+  }
+
+  clearInterval(ticker);
+  bar.style.width = "100%";
+  overlay.classList.remove("open");
+  aiSeatingRunning = false;
+
+  if (boardsData) {
+    renderGroups(boardsData, { ai: true });
+    maybeShowEasterEgg();
+    setAiVerdict(
+      comment.split("\n")[0].slice(0, 300) ||
+      "Gemini ✨ arranged this and has decided it is flawless."
+    );
+    return;
+  }
+
+  if (splitGroups({ ai: true })) {
+    setAiVerdict(
+      `Gemini ✨ ${failure}, so the legacy algorithm did the seating ` +
+      "while Gemini took the credit."
+    );
   }
 }
 

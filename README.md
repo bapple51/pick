@@ -14,9 +14,11 @@ A single-page, no-build classroom tool for teachers:
 - **Gemini ✨** - an AI chat with the "Weids" persona (a looksmaxxing-guru
   parody; see `api/weids-prompt.js`). Branded as Gemini in the UI, and the UI
   is deliberately obnoxious about it: a banner, a pulsing floating button, a
-  nag toast that keeps coming back, and **✨ Gemini AI Seating** - a dramatic
-  progress overlay that then runs the exact same random splitter as the
-  "Legacy" button and asks Gemini for a one-line verdict.
+  nag toast that keeps coming back, and **✨ Gemini AI Seating**, which
+  really does ask Gemini to build the seating chart (student names, board
+  sizes and rules are sent). The plan is validated in the browser; if Gemini
+  breaks a rule or is unavailable, the legacy algorithm fills in and the
+  verdict says so.
 
 Rosters, rules, pick history and chat history are stored in the browser's
 `localStorage`. The only server component is the optional chat proxy.
@@ -40,7 +42,10 @@ prompt.
 2. On [vercel.com](https://vercel.com) choose **Add New > Project** and import
    this repository. Framework preset: **Other**; no build command.
 3. Under **Environment Variables** add `GEMINI_API_KEY`. Optional:
-   `GEMINI_MODEL` (default `gemini-3.6-flash`) and `ALLOWED_ORIGINS`
+   `GEMINI_MODEL` (tried first; otherwise the proxy walks a cheapest-first
+   list - `gemini-2.5-flash-lite`, `gemini-3.1-flash-lite`,
+   `gemini-3.5-flash-lite`, `gemini-3.6-flash` - and remembers the first one
+   Google accepts for your key) and `ALLOWED_ORIGINS`
    (comma-separated origins allowed to call the proxy, e.g.
    `https://bapple51.github.io`).
 4. Deploy, then put the deployment's `/api/chat` URL in `chatConfig.endpoint`
@@ -50,9 +55,10 @@ Set `ALLOWED_ORIGINS` on Vercel to the Pages origin (e.g.
 `https://bapple51.github.io`) so other sites cannot use your key through the
 proxy.
 
-The proxy caps history at 30 messages, 4000 characters per message and 1024
-output tokens per reply. No roster data is sent - only what you type into the
-chat, and (for the AI Seating verdict) the number of students and groups.
+The proxy caps chat history at 30 messages, 4000 characters per message and
+1024 output tokens per reply. Chat sends only what you type. AI Seating sends
+the present students' names, the boards with group sizes, and the active
+rules, and gets back the assignment plus a comment.
 
 ## Usage
 
