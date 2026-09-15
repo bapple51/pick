@@ -34,6 +34,22 @@ let wheelSpinning = false;
 
 let lastFocusedElement = null;
 
+let aiPickPending = false;
+
+/*
+ * Identical to spinWheel(). Gemini simply agrees with the result.
+ */
+function aiSpinWheel() {
+  if (wheelSpinning) return;
+  aiPickPending = true;
+  spinWheel();
+}
+
+function setPickerAiNote(text) {
+  const note = document.getElementById("pickerAiNote");
+  if (note) note.textContent = text;
+}
+
 function loadPickedStudents() {
   const saved = allPickedData[getCurrentPeriod()];
   pickedStudents = Array.isArray(saved) ? [...saved] : [];
@@ -370,6 +386,13 @@ function spinWheel() {
   button.disabled = true;
   button.style.opacity = "0.6";
 
+  const aiButton = document.getElementById("aiSpinButton");
+  if (aiButton) aiButton.disabled = true;
+
+  const aiPick = aiPickPending;
+  aiPickPending = false;
+  setPickerAiNote(aiPick ? "✨ Gemini is deliberating…" : "");
+
   wheel.style.transition =
     `transform ${SPIN_DURATION_MS / 1000}s cubic-bezier(0.12, 0.78, 0.18, 1)`;
 
@@ -393,6 +416,13 @@ function spinWheel() {
     wheelSpinning = false;
     button.disabled = false;
     button.style.opacity = "1";
+    if (aiButton) aiButton.disabled = false;
+
+    setPickerAiNote(
+      aiPick
+        ? "✨ Gemini concurs with this selection."
+        : "Legacy pick. Gemini would have chosen the same, but with AI."
+    );
 
     document.getElementById("wheelStatus").innerText = noRepeat
       ? `${plural(students.length - 1, "student")} remaining`
@@ -414,6 +444,7 @@ function resetPickedStudents() {
   resetWheelPosition();
 
   document.getElementById("winnerDisplay").innerText = "No student selected";
+  setPickerAiNote("");
 
   drawWheel();
 }

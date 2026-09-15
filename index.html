@@ -9,7 +9,7 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>Classroom Helper</title>
+  <title>Classroom Helper ✨ Powered by Gemini AI</title>
   <link rel="icon" type="image/png" href="icon.png">
   <link rel="stylesheet" href="css/styles.css">
 
@@ -30,6 +30,7 @@
     <button class="ai-banner-button ghost" onclick="openChatModal()">
       Ask Gemini
     </button>
+    <span id="aiScore" class="ai-score"></span>
   </div>
 
   <div class="top-bar">
@@ -51,6 +52,7 @@
 
     <label for="studentInput" class="input-label">
       Paste names (one per line):
+      <span class="mini-ai">✨ AI-ready</span>
     </label>
 
     <textarea
@@ -106,7 +108,7 @@
         class="secondary"
         onclick="savePeriodRoster()"
       >
-        Save to Period
+        Save to Period <span class="mini-ai inverse">✨ AI-compatible</span>
       </button>
 
       <button
@@ -125,10 +127,10 @@
 
       <button
         class="secondary legacy-button"
-        onclick="splitGroups()"
+        onclick="confirmLegacy()"
         title="Manual. No AI. Gemini will hear about this."
       >
-        Make Groups (Legacy)
+        Make Groups (Legacy) <span class="mini-ai warn">no AI</span>
       </button>
 
       <label class="override-toggle">
@@ -151,6 +153,7 @@
 
       <div class="roster-header">
         Uncheck Absent Students:
+        <span class="mini-ai">✨ AI can't do this yet</span>
       </div>
 
       <div
@@ -255,6 +258,7 @@
 
         <h2 id="pickerModalTitle">
           Random Student Picker
+          <span class="mini-ai">✨ Now with AI</span>
         </h2>
 
         <button
@@ -277,11 +281,19 @@
         <div class="picker-controls">
 
           <button
-            class="spin-button"
+            class="spin-button ai-button"
+            id="aiSpinButton"
+            onclick="aiSpinWheel()"
+          >
+            ✨ AI Pick
+          </button>
+
+          <button
+            class="spin-button secondary"
             id="spinButton"
             onclick="spinWheel()"
           >
-            Pick Student
+            Pick Student (Legacy)
           </button>
 
           <button
@@ -333,6 +345,11 @@
         >
           Add students to create the wheel.
         </div>
+
+        <div
+          id="pickerAiNote"
+          class="picker-ai-note"
+        ></div>
 
         <div
           id="pickedList"
@@ -456,6 +473,74 @@
 
 
   <!-- =====================================================
+       WELCOME SPLASH
+       ===================================================== -->
+
+  <div id="aiSplash" class="ai-splash" role="dialog" aria-modal="true" aria-labelledby="aiSplashTitle">
+    <div class="ai-splash-content">
+      <div class="ai-splash-eyebrow">🚀 A NEW ERA OF CLASSROOM HELPING</div>
+      <h2 id="aiSplashTitle" class="ai-splash-title">✨ Welcome to the AI Era</h2>
+      <p class="ai-splash-text">
+        Gemini AI Seating™ is here. Same seating chart. Same whiteboards.
+        Now with <strong>artificial intelligence</strong>.
+      </p>
+      <ul class="ai-splash-list">
+        <li>✨ AI-optimized groups (validated by a non-AI)</li>
+        <li>✨ AI-powered random picks (identical odds)</li>
+        <li>✨ Unsolicited AI verdicts</li>
+      </ul>
+      <button class="ai-button ai-splash-primary" onclick="splashUnleash()">
+        ✨ Unleash Gemini
+      </button>
+      <button id="splashSkip" class="ai-splash-skip" onclick="dismissSplash()" disabled>
+        Continue without AI (5)
+      </button>
+    </div>
+  </div>
+
+
+  <!-- =====================================================
+       AI CONSENT BAR
+       ===================================================== -->
+
+  <div id="aiConsent" class="ai-consent" role="status">
+    <span class="ai-consent-text">
+      🍪 This site uses <strong>AI</strong>. By continuing you agree that Gemini is right.
+    </span>
+    <button class="ai-consent-button" onclick="acceptAi()">Accept AI</button>
+    <button class="ai-consent-button primary" onclick="acceptAi()">Accept AI ✨</button>
+  </div>
+
+
+  <!-- =====================================================
+       LEGACY CONFIRMATION
+       ===================================================== -->
+
+  <div id="legacyConfirm" class="picker-modal legacy-confirm" onclick="if (event.target === this) closeLegacyConfirm()">
+    <div class="picker-modal-content legacy-confirm-content" role="dialog" aria-modal="true" aria-labelledby="legacyConfirmTitle">
+      <h2 id="legacyConfirmTitle">Make groups <em>without</em> AI?</h2>
+      <p>
+        It's the current year. Gemini is right there. Making groups manually
+        will be recorded on your permanent AI scoreboard.
+      </p>
+      <button class="ai-button legacy-confirm-primary" onclick="legacyRedeemed()">
+        ✨ Use Gemini AI Seating instead
+      </button>
+      <button class="legacy-confirm-skip" onclick="legacyAnyway()">
+        I accept the consequences (Legacy)
+      </button>
+    </div>
+  </div>
+
+
+  <!-- =====================================================
+       WATERMARK
+       ===================================================== -->
+
+  <div class="ai-watermark" aria-hidden="true">Powered by ✨ Gemini</div>
+
+
+  <!-- =====================================================
        AI NAG TOAST
        ===================================================== -->
 
@@ -528,6 +613,7 @@
   <script src="js/seating.js"></script>
   <script src="js/picker.js"></script>
   <script src="js/chat.js"></script>
+  <script src="js/obnoxious.js"></script>
   <script src="js/app.js"></script>
 
 </body>

@@ -14,7 +14,11 @@ A single-page, no-build classroom tool for teachers:
 - **Gemini ✨** - an AI chat with the "Weids" persona (a looksmaxxing-guru
   parody; see `api/weids-prompt.js`). Branded as Gemini in the UI, and the UI
   is deliberately obnoxious about it: a banner, a pulsing floating button, a
-  nag toast that keeps coming back, and **✨ Gemini AI Seating**, which
+  nag toast every 20 seconds, a welcome splash with a 5-second countdown
+  before you may "continue without AI", an AI consent bar whose two buttons
+  both accept, a confirmation before making groups without AI, a permanent
+  AI-vs-Legacy scoreboard, a sparkle cursor trail, confetti, a cycling tab
+  title, a wobbling watermark, and **✨ Gemini AI Seating**, which
   really does ask Gemini to build the seating chart (student names, board
   sizes and rules are sent). The plan is validated in the browser; if Gemini
   breaks a rule or is unavailable, the legacy algorithm fills in and the
@@ -102,7 +106,8 @@ rules, and gets back the assignment plus a comment.
 | `js/rules.js` | Whiteboard rules UI and the rule-aware group assignment |
 | `js/seating.js` | Board selection, group sizing, rendering, drag-and-drop |
 | `js/picker.js` | Wheel drawing, spinning, pick history |
-| `js/chat.js` | Gemini chat UI, nag toast, AI Seating theatre |
+| `js/chat.js` | Gemini chat UI, nag toast, AI Seating |
+| `js/obnoxious.js` | Splash, consent bar, legacy confirm, scoreboard, sparkles, confetti |
 | `api/chat.js` | Vercel serverless function proxying to Gemini |
 | `api/weids-prompt.js` | The system prompt (Weids persona) |
 | `js/app.js` | Page bootstrap |

@@ -1229,6 +1229,293 @@
     }
 
     /* =====================================================
+       EVEN MORE OBNOXIOUS AI
+       ===================================================== */
+
+    .mini-ai {
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 6px;
+      padding: 1px 7px;
+      border-radius: 999px;
+      font-size: 10px;
+      font-weight: bold;
+      letter-spacing: 0.3px;
+      color: white;
+      background: linear-gradient(120deg, #6a11cb, #2575fc, #ff2d95);
+      background-size: 200% 200%;
+      animation: aiShimmer 4s ease infinite;
+      white-space: nowrap;
+    }
+
+    .mini-ai.inverse {
+      background: rgba(255, 255, 255, 0.22);
+    }
+
+    .mini-ai.warn {
+      background: #b00020;
+      animation: none;
+    }
+
+    .ai-score {
+      flex-basis: 100%;
+      font-size: 12px;
+      opacity: 0.9;
+    }
+
+    .picker-ai-note {
+      min-height: 18px;
+      margin-top: 6px;
+      font-size: 13px;
+      color: #4a1fb8;
+      font-style: italic;
+    }
+
+    /* ---- splash ---- */
+
+    .ai-splash {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 3000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(255, 45, 149, 0.35), transparent 40%),
+        radial-gradient(circle at 80% 70%, rgba(37, 117, 252, 0.35), transparent 40%),
+        rgba(14, 6, 36, 0.94);
+    }
+
+    .ai-splash.open {
+      display: flex;
+    }
+
+    .ai-splash-content {
+      width: min(560px, 100%);
+      padding: 34px 30px;
+      border-radius: 18px;
+      background: white;
+      text-align: center;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5);
+      animation: modalOpen 0.25s ease-out;
+    }
+
+    .ai-splash-eyebrow {
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 1.5px;
+      color: #6a11cb;
+      margin-bottom: 8px;
+    }
+
+    .ai-splash-title {
+      margin: 0 0 10px;
+      font-size: 32px;
+      background: linear-gradient(120deg, #6a11cb, #2575fc, #ff2d95);
+      background-size: 200% 200%;
+      animation: aiShimmer 4s ease infinite;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .ai-splash-text {
+      color: #444;
+      margin: 0 0 14px;
+    }
+
+    .ai-splash-list {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 20px;
+      color: #333;
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .ai-splash-primary {
+      display: block;
+      width: 100%;
+      font-size: 20px;
+      padding: 16px 20px;
+      margin-bottom: 10px;
+    }
+
+    .ai-splash-skip {
+      background: none;
+      color: #999;
+      font-size: 12px;
+      padding: 6px 10px;
+      text-decoration: underline;
+    }
+
+    .ai-splash-skip:hover {
+      background: none;
+      color: #666;
+    }
+
+    .ai-splash-skip:disabled {
+      color: #bbb;
+      text-decoration: none;
+    }
+
+    /* ---- consent bar ---- */
+
+    .ai-consent {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 960;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 14px 18px;
+      background: #14102a;
+      color: white;
+      font-size: 14px;
+      transform: translateY(110%);
+      transition: transform 0.35s ease;
+      box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .ai-consent.open {
+      transform: translateY(0);
+    }
+
+    .ai-consent-button {
+      padding: 8px 14px;
+      font-size: 14px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+    }
+
+    .ai-consent-button.primary {
+      background: #ffe600;
+      color: #2a1660;
+      font-weight: bold;
+      border: none;
+    }
+
+    .ai-consent-button.primary:hover {
+      background: #fff176;
+    }
+
+    /* ---- legacy confirm ---- */
+
+    .legacy-confirm {
+      z-index: 1200;
+    }
+
+    .legacy-confirm-content {
+      width: min(480px, 100%);
+      text-align: center;
+    }
+
+    .legacy-confirm-content h2 {
+      margin: 0 0 8px;
+    }
+
+    .legacy-confirm-content p {
+      color: #555;
+      margin: 0 0 18px;
+    }
+
+    .legacy-confirm-primary {
+      display: block;
+      width: 100%;
+      font-size: 18px;
+      padding: 14px 18px;
+      margin-bottom: 8px;
+    }
+
+    .legacy-confirm-skip {
+      background: none;
+      color: #999;
+      font-size: 11px;
+      padding: 4px 8px;
+      text-decoration: underline;
+    }
+
+    .legacy-confirm-skip:hover {
+      background: none;
+      color: #666;
+    }
+
+    /* ---- watermark ---- */
+
+    .ai-watermark {
+      position: fixed;
+      left: 14px;
+      bottom: 14px;
+      z-index: 890;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+      color: white;
+      background: linear-gradient(120deg, #6a11cb, #2575fc, #ff2d95);
+      background-size: 200% 200%;
+      opacity: 0.85;
+      animation: aiShimmer 4s ease infinite, aiWobble 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes aiWobble {
+      0%, 100% { transform: rotate(-4deg); }
+      50%      { transform: rotate(4deg); }
+    }
+
+    /* ---- sparkle cursor + confetti ---- */
+
+    .cursor-sparkle {
+      position: fixed;
+      z-index: 4000;
+      pointer-events: none;
+      transform: translate(-50%, -50%);
+      animation: sparkleFade 0.9s ease-out forwards;
+    }
+
+    @keyframes sparkleFade {
+      0%   { opacity: 1; transform: translate(-50%, -50%) scale(0.6); }
+      100% { opacity: 0; transform: translate(-50%, -160%) scale(1.3) rotate(40deg); }
+    }
+
+    .ai-confetti {
+      position: fixed;
+      top: -40px;
+      z-index: 3500;
+      pointer-events: none;
+      animation: confettiFall 2.4s linear forwards;
+    }
+
+    @keyframes confettiFall {
+      0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+      100% { transform: translateY(110vh) rotate(720deg); opacity: 0.6; }
+    }
+
+    @media (max-width: 550px) {
+
+      .ai-watermark {
+        display: none;
+      }
+
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+
+      .mini-ai,
+      .ai-watermark,
+      .ai-splash-title {
+        animation: none;
+      }
+
+    }
+
+    /* =====================================================
        EASTER EGG
        ===================================================== */
 

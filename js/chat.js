@@ -9,8 +9,8 @@
 const chatConfig = {
   endpoint: "https://pick-rose.vercel.app/api/chat",
   maxStoredMessages: 40,
-  nagFirstDelayMs: 6000,
-  nagRepeatMs: 45000
+  nagFirstDelayMs: 4000,
+  nagRepeatMs: 20000
 };
 
 const chatHistoryKey = "aiChatHistory";
@@ -254,7 +254,7 @@ function scheduleNagToast(delayMs) {
 }
 
 function showNagToast() {
-  if (isChatOpen() || isPickerOpen()) {
+  if (isChatOpen() || isPickerOpen() || isSplashOpen()) {
     scheduleNagToast(chatConfig.nagRepeatMs);
     return;
   }
@@ -450,6 +450,8 @@ async function aiSplitGroups() {
 
   if (boardsData) {
     renderGroups(boardsData, { ai: true });
+    recordAiUse("ai");
+    spawnConfetti();
     maybeShowEasterEgg();
     setAiVerdict(
       comment.split("\n")[0].slice(0, 300) ||
@@ -459,6 +461,7 @@ async function aiSplitGroups() {
   }
 
   if (splitGroups({ ai: true })) {
+    recordAiUse("ai");
     setAiVerdict(
       `Gemini ✨ ${failure}, so the legacy algorithm did the seating ` +
       "while Gemini took the credit."

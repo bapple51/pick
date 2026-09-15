@@ -46,7 +46,7 @@ function renderRoom(boardsData = {}, options = {}) {
   const actions = hasStudents
     ? `
       <div class="results-actions">
-        <button class="secondary" onclick="copyGroups()">Copy Groups</button>
+        <button class="secondary" onclick="copyGroups()">Copy Groups <span class="mini-ai inverse">✨</span></button>
         <span id="copyStatus" class="copy-status" aria-live="polite"></span>
       </div>`
     : "";
