@@ -309,6 +309,12 @@ async function handleSeating(apiKey, body, res) {
     .filter(r => r.students.length >= 2)
     .slice(0, 30);
 
+  const avoidPairs = (Array.isArray(body.avoidPairs) ? body.avoidPairs : [])
+    .filter(p => Array.isArray(p) && p.length === 2)
+    .map(p => cleanNames(p, 2))
+    .filter(p => p.length === 2)
+    .slice(0, 80);
+
   const totalSize = boards.reduce((n, b) => n + b.size, 0);
 
   if (students.length < 2 || boards.length === 0 || totalSize !== students.length) {
@@ -327,6 +333,11 @@ async function handleSeating(apiKey, body, res) {
     (rules.length
       ? rules.map(r => `- ${r.type.toUpperCase()}: ${r.students.join(", ")}`).join("\n")
       : "- none") +
+    (avoidPairs.length
+      ? "\n\nSoft preference (not a hard rule): these pairs worked together " +
+        "recently, so keep them apart where you can:\n" +
+        avoidPairs.map(p => `- ${p[0]} & ${p[1]}`).join("\n")
+      : "") +
     "\n\nReturn the JSON object now.";
 
   const result = await callGemini(

@@ -37,6 +37,15 @@
     <button class="secondary enable-ai-button" onclick="enableAi()">
       ✨ Turn AI on
     </button>
+    <div class="backup-controls">
+      <button class="secondary small" onclick="exportData()" title="Download all rosters, rules and history as a file">
+        Export data
+      </button>
+      <button class="secondary small" onclick="importDataPrompt()" title="Restore from an exported file">
+        Import data
+      </button>
+      <input id="importFile" type="file" accept="application/json,.json" hidden onchange="importData(event)">
+    </div>
     <div class="class-switcher">
       <label for="classSelect">Class:</label>
       <select id="classSelect" onchange="switchClass()">
@@ -146,6 +155,42 @@
         Override capacity
 
       </label>
+
+      <label class="override-toggle" title="Prefer groupings that don't repeat partners from the last few rounds">
+
+        <input
+          type="checkbox"
+          id="avoidRepeats"
+          checked
+        >
+
+        Avoid recent partners
+
+      </label>
+
+    </div>
+
+    <div class="flex-container timer-row">
+
+      <span class="timer-label">Group timer:</span>
+
+      <select id="timerMinutes">
+        <option value="2">2 min</option>
+        <option value="3">3 min</option>
+        <option value="5" selected>5 min</option>
+        <option value="8">8 min</option>
+        <option value="10">10 min</option>
+        <option value="15">15 min</option>
+        <option value="20">20 min</option>
+      </select>
+
+      <button
+        class="secondary"
+        id="timerButton"
+        onclick="toggleTimer()"
+      >
+        Start timer
+      </button>
 
     </div>
 
@@ -476,6 +521,20 @@
 
 
   <!-- =====================================================
+       TIMER DISPLAY
+       ===================================================== -->
+
+  <div
+    id="timerDisplay"
+    class="timer-display"
+    role="timer"
+    aria-live="off"
+    onclick="dismissTimer()"
+    title="Click to stop"
+  ></div>
+
+
+  <!-- =====================================================
        WELCOME SPLASH
        ===================================================== -->
 
@@ -616,6 +675,8 @@
   <script src="js/seating.js"></script>
   <script src="js/picker.js"></script>
   <script src="js/chat.js"></script>
+  <script src="js/timer.js"></script>
+  <script src="js/backup.js"></script>
   <script src="js/obnoxious.js"></script>
   <script src="js/app.js"></script>
 

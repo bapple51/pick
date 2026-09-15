@@ -1516,6 +1516,147 @@
     }
 
     /* =====================================================
+       REAL IMPROVEMENTS: backup, timer, tap-to-move, print
+       ===================================================== */
+
+    .top-bar {
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .backup-controls {
+      display: flex;
+      gap: 6px;
+      margin-right: auto;
+    }
+
+    .no-ai .backup-controls {
+      margin-right: 0;
+    }
+
+    button.small {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+
+    .timer-row {
+      margin-top: 0;
+      margin-bottom: 0;
+    }
+
+    .timer-label {
+      font-weight: bold;
+      color: #444;
+      font-size: 14px;
+    }
+
+    .timer-display {
+      display: none;
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 950;
+      min-width: 150px;
+      padding: 12px 22px;
+      border-radius: 14px;
+      background: #1c1433;
+      color: white;
+      font-size: 44px;
+      font-weight: bold;
+      font-variant-numeric: tabular-nums;
+      text-align: center;
+      letter-spacing: 1px;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .timer-display.open {
+      display: block;
+    }
+
+    .timer-display.warning {
+      background: #b35c00;
+    }
+
+    .timer-display.done {
+      background: #c62828;
+      font-size: 32px;
+      animation: timerFlash 0.8s ease-in-out infinite;
+    }
+
+    @keyframes timerFlash {
+      0%, 100% { opacity: 1; }
+      50%      { opacity: 0.55; }
+    }
+
+    .board li.selected {
+      outline: 3px solid #0066cc;
+      outline-offset: 1px;
+      background: #e0f0ff;
+    }
+
+    .classroom-grid.has-selection .board {
+      cursor: pointer;
+      border-color: #7fb3e6;
+    }
+
+    .restored-note {
+      color: #2e8b57;
+      font-weight: bold;
+    }
+
+    @media print {
+
+      body {
+        max-width: none;
+        margin: 0;
+        padding: 0;
+        background: white;
+      }
+
+      .top-bar,
+      .card:not(.results-card),
+      .ai-banner,
+      .ai-fab,
+      .ai-watermark,
+      .nag-toast,
+      .ai-consent,
+      .ai-splash,
+      .timer-display,
+      .results-actions,
+      .ai-verdict,
+      .legacy-badge,
+      .ai-badge,
+      .hint,
+      #errorMsg {
+        display: none !important;
+      }
+
+      .results-card {
+        border: none;
+        box-shadow: none;
+        padding: 0;
+      }
+
+      .classroom-grid {
+        gap: 6px;
+      }
+
+      .board {
+        border: 1px solid #888;
+        background: white;
+        break-inside: avoid;
+      }
+
+      .board li {
+        border-color: #aaa;
+        box-shadow: none;
+      }
+
+    }
+
+    /* =====================================================
        NO-AI MODE
 
        body.no-ai hides every AI feature and restores the

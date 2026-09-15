@@ -206,12 +206,25 @@ function drawWheel() {
   const canvas = document.getElementById("studentWheel");
   if (!canvas) return;
 
-  const ctx = canvas.getContext("2d");
-  const students = getAvailableStudents();
-  const center = canvas.width / 2;
-  const radius = canvas.width / 2 - 8;
+  /*
+   * Draw at device resolution so the wheel is crisp on HiDPI
+   * screens; all geometry below uses the logical size.
+   */
+  const size = 600;
+  const dpr = Math.min(window.devicePixelRatio || 1, 3);
+  if (canvas.width !== size * dpr) {
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
+  }
 
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+  const students = getAvailableStudents();
+  const center = size / 2;
+  const radius = size / 2 - 8;
+
+  ctx.clearRect(0, 0, size, size);
   renderPickedList();
 
   /* ---- no students ---- */

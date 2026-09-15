@@ -116,6 +116,48 @@ function getSavedRoster(period = getCurrentPeriod()) {
 
 
 /* =====================================================
+   ABSENCES
+
+   Unticked students are remembered per period for the
+   current day only, so a mid-class reload keeps them
+   absent and tomorrow starts fresh.
+   ===================================================== */
+
+const absenceStorageKey = "absences";
+
+let allAbsenceData = readStoredObject(absenceStorageKey);
+
+function todayKey() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+function getSavedAbsences(period = getCurrentPeriod()) {
+  const entry = allAbsenceData[period];
+  return entry && entry.date === todayKey() && Array.isArray(entry.absent)
+    ? entry.absent
+    : [];
+}
+
+function saveAbsences() {
+  const absent = Array.from(
+    document.querySelectorAll("#rosterList input[type='checkbox']")
+  )
+    .filter(checkbox => !checkbox.checked)
+    .map(checkbox => checkbox.value);
+
+  allAbsenceData[getCurrentPeriod()] = { date: todayKey(), absent };
+  writeStoredObject(absenceStorageKey, allAbsenceData);
+}
+
+function handleAbsenceChange() {
+  saveAbsences();
+  drawWheel();
+}
+
+
+/* =====================================================
    SAVE PERIOD
    ===================================================== */
 
@@ -162,6 +204,8 @@ function loadPeriodRoster() {
   rosterList.innerHTML = "";
   textarea.value = students.join("\n");
 
+  const absent = new Set(getSavedAbsences(period));
+
   if (students.length === 0) {
     rosterSection.style.display = "none";
   } else {
@@ -173,10 +217,10 @@ function loadPeriodRoster() {
 
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
-      checkbox.checked = true;
+      checkbox.checked = !absent.has(student);
       checkbox.value = student;
       checkbox.id = `student-${period}-${index}`;
-      checkbox.addEventListener("change", drawWheel);
+      checkbox.addEventListener("change", handleAbsenceChange);
 
       const label = document.createElement("label");
       label.htmlFor = checkbox.id;
@@ -191,6 +235,7 @@ function loadPeriodRoster() {
   updateRuleStudentOptions();
   renderWhiteboardRules();
   drawWheel();
+  restoreGrouping();
 }
 
 

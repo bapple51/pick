@@ -36,6 +36,15 @@ function createBoardHtml(cell, students = []) {
    RENDER ROOM
    ===================================================== */
 
+function formatWhen(timestamp) {
+  const d = new Date(timestamp);
+  const sameDay = d.toDateString() === new Date().toDateString();
+  const time = d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return sameDay
+    ? `today at ${time}`
+    : `${d.toLocaleDateString([], { month: "short", day: "numeric" })} at ${time}`;
+}
+
 function renderRoom(boardsData = {}, options = {}) {
   const boards = layoutConfig
     .map(cell => createBoardHtml(cell, boardsData[cell.id] || []))
@@ -47,8 +56,13 @@ function renderRoom(boardsData = {}, options = {}) {
     ? `
       <div class="results-actions">
         <button class="secondary" onclick="copyGroups()">Copy Groups <span class="mini-ai inverse">✨</span></button>
+        <button class="secondary" onclick="window.print()">Print</button>
         <span id="copyStatus" class="copy-status" aria-live="polite"></span>
       </div>`
+    : "";
+
+  const restoredNote = options.restored
+    ? `<span class="restored-note">Restored from ${formatWhen(options.restored)}.</span> `
     : "";
 
   const aiOn = typeof isAiEnabled !== "function" || isAiEnabled();
@@ -60,23 +74,27 @@ function renderRoom(boardsData = {}, options = {}) {
       : "";
 
   const verdict = options.ai
-    ? `<div class="ai-verdict"><span class="ai-verdict-label">✨ Gemini says:</span> <span id="aiVerdict">…</span></div>`
+    ? `<div class="ai-verdict"><span class="ai-verdict-label">✨ Gemini says:</span> <span id="aiVerdict">${escapeHtml(options.verdict || "…")}</span></div>`
     : hasStudents && aiOn
       ? `<div class="ai-verdict muted">Psst — ✨ Gemini AI Seating would have done this with 100% more AI.</div>`
       : "";
 
   document.getElementById("results").innerHTML = `
-    <div class="card${options.ai ? " ai-card" : ""}">
+    <div class="card results-card${options.ai ? " ai-card" : ""}">
       <div class="results-header">
         <h3>Room Layout Grouping: ${badge}</h3>
         ${actions}
       </div>
       ${verdict}
-      <p class="hint">Drag a name to move a student to a different board.</p>
+      <p class="hint">
+        ${restoredNote}Drag a name — or tap a name, then tap a board — to move a student.
+      </p>
       <div class="classroom-grid">${boards}</div>
     </div>`;
 
+  selectedStudentId = null;
   checkAllLimits();
+  if (typeof refreshTimerControls === "function") refreshTimerControls();
 }
 
 function renderEmptyLayout() {
@@ -85,6 +103,133 @@ function renderEmptyLayout() {
 
 function renderGroups(boardsData, options) {
   renderRoom(boardsData, options);
+}
+
+
+/* =====================================================
+   GROUP HISTORY
+
+   The last few groupings per period are kept so the
+   current arrangement survives a reload and so "avoid
+   recent partners" has something to avoid.
+   ===================================================== */
+
+const groupHistoryKey = "groupHistory";
+const GROUP_HISTORY_LIMIT = 6;
+const RECENT_PARTNER_LOOKBACK = 3;
+
+let allGroupHistory = readStoredObject(groupHistoryKey);
+
+function getGroupHistory(period = getCurrentPeriod()) {
+  return Array.isArray(allGroupHistory[period]) ? allGroupHistory[period] : [];
+}
+
+function writeGroupHistory(list, period = getCurrentPeriod()) {
+  allGroupHistory[period] = list.slice(-GROUP_HISTORY_LIMIT);
+  writeStoredObject(groupHistoryKey, allGroupHistory);
+}
+
+function compactGroups(boardsData) {
+  const groups = {};
+  Object.keys(boardsData).forEach(id => {
+    if (boardsData[id] && boardsData[id].length) groups[id] = [...boardsData[id]];
+  });
+  return groups;
+}
+
+function pushGroupHistory(boardsData, meta = {}) {
+  const list = getGroupHistory();
+  list.push({
+    at: Date.now(),
+    ai: !!meta.ai,
+    verdict: meta.verdict || "",
+    groups: compactGroups(boardsData)
+  });
+  writeGroupHistory(list);
+}
+
+/*
+ * Drag/tap edits change the latest grouping in place.
+ */
+function updateLatestGrouping() {
+  const list = getGroupHistory();
+  if (!list.length) return;
+  const groups = {};
+  getGroupsFromDom().forEach(group => {
+    const cell = layoutConfig.find(c => c.name === group.name);
+    if (cell) groups[cell.id] = group.students;
+  });
+  list[list.length - 1].groups = groups;
+  writeGroupHistory(list);
+}
+
+function updateLatestVerdict(verdict) {
+  const list = getGroupHistory();
+  if (!list.length) return;
+  list[list.length - 1].verdict = verdict;
+  writeGroupHistory(list);
+}
+
+function restoreGrouping() {
+  const list = getGroupHistory();
+  const latest = list[list.length - 1];
+
+  if (!latest || !latest.groups) {
+    renderEmptyLayout();
+    return;
+  }
+
+  renderRoom(latest.groups, {
+    ai: latest.ai,
+    verdict: latest.verdict,
+    restored: latest.at
+  });
+}
+
+function clearGrouping() {
+  writeGroupHistory(getGroupHistory().slice(0, -1));
+  restoreGrouping();
+}
+
+function pairKey(a, b) {
+  return [a.toLowerCase(), b.toLowerCase()].sort().join("|");
+}
+
+/*
+ * Every pair of students who shared a board in the last few
+ * groupings for this period.
+ */
+function recentPartnerPairs() {
+  const pairs = new Set();
+  getGroupHistory()
+    .slice(-RECENT_PARTNER_LOOKBACK)
+    .forEach(entry => {
+      Object.values(entry.groups || {}).forEach(names => {
+        for (let i = 0; i < names.length; i++) {
+          for (let j = i + 1; j < names.length; j++) {
+            pairs.add(pairKey(names[i], names[j]));
+          }
+        }
+      });
+    });
+  return pairs;
+}
+
+function countRepeatedPairs(boardsData, pairs) {
+  let repeats = 0;
+  Object.values(boardsData).forEach(names => {
+    for (let i = 0; i < names.length; i++) {
+      for (let j = i + 1; j < names.length; j++) {
+        if (pairs.has(pairKey(names[i], names[j]))) repeats++;
+      }
+    }
+  });
+  return repeats;
+}
+
+function shouldAvoidRepeats() {
+  const box = document.getElementById("avoidRepeats");
+  return !box || box.checked;
 }
 
 
@@ -287,13 +432,33 @@ function splitGroups(options = {}) {
   const plan = planGroups();
   if (!plan) return false;
 
-  const boardsData = assignStudentsWithWhiteboardRules(
-    plan.boards,
-    plan.sizes,
-    shuffle(plan.students)
-  );
+  /*
+   * With "avoid recent partners" on, try a number of shuffles and
+   * keep the one that repeats the fewest recent pairs.
+   */
+  const pairs = shouldAvoidRepeats() ? recentPartnerPairs() : new Set();
+  const attempts = pairs.size ? 40 : 1;
 
-  if (!boardsData) {
+  let best = null;
+  let bestScore = Infinity;
+
+  for (let i = 0; i < attempts; i++) {
+    const candidate = assignStudentsWithWhiteboardRules(
+      plan.boards,
+      plan.sizes,
+      shuffle(plan.students)
+    );
+    if (!candidate) continue;
+
+    const score = countRepeatedPairs(candidate, pairs);
+    if (score < bestScore) {
+      best = candidate;
+      bestScore = score;
+    }
+    if (score === 0) break;
+  }
+
+  if (!best) {
     showError(
       "The saved whiteboard rules cannot be satisfied with the available " +
       "group sizes. Remove or change a rule and try again."
@@ -301,7 +466,8 @@ function splitGroups(options = {}) {
     return false;
   }
 
-  renderGroups(boardsData, options);
+  renderGroups(best, options);
+  pushGroupHistory(best, { ai: !!options.ai });
   maybeShowEasterEgg();
   return true;
 }
@@ -377,6 +543,31 @@ function dragLeave(ev) {
   if (board) board.classList.remove("drag-over");
 }
 
+/*
+ * Move a student <li> into a board, respecting capacity unless
+ * override is on. Returns true when the move happened.
+ */
+function moveStudentToBoard(student, board) {
+  const list = board.querySelector("ul");
+  const max = parseInt(board.dataset.max, 10);
+  const currentCount = list.querySelectorAll("li").length;
+  const override = document.getElementById("overrideCapacity").checked;
+
+  if (!override && student.parentElement !== list && currentCount >= max) {
+    const name = board.querySelector("h3").firstChild.textContent.trim();
+    showError(
+      `${name} is full (MAX ${max}). Enable "Override capacity" to exceed it.`
+    );
+    return false;
+  }
+
+  showError("");
+  list.appendChild(student);
+  checkAllLimits();
+  updateLatestGrouping();
+  return true;
+}
+
 function drop(ev) {
   ev.preventDefault();
 
@@ -390,22 +581,51 @@ function drop(ev) {
   );
   if (!student) return;
 
-  const list = board.querySelector("ul");
-  const max = parseInt(board.dataset.max, 10);
-  const currentCount = list.querySelectorAll("li").length;
-  const override = document.getElementById("overrideCapacity").checked;
+  moveStudentToBoard(student, board);
+}
 
-  if (!override && student.parentElement !== list && currentCount >= max) {
-    const name = board.querySelector("h3").firstChild.textContent.trim();
-    showError(
-      `${name} is full (MAX ${max}). Enable "Override capacity" to exceed it.`
-    );
+
+/* =====================================================
+   TAP TO MOVE
+
+   HTML5 drag-and-drop does not work on touch screens, so
+   tapping a name selects it and tapping a board moves it.
+   ===================================================== */
+
+let selectedStudentId = null;
+
+function setSelectedStudent(id) {
+  document
+    .querySelectorAll(".board li.selected")
+    .forEach(li => li.classList.remove("selected"));
+
+  selectedStudentId = id;
+
+  if (id) {
+    const li = document.getElementById(id);
+    if (li) li.classList.add("selected");
+  }
+
+  document
+    .querySelector(".classroom-grid")
+    ?.classList.toggle("has-selection", !!id);
+}
+
+function handleResultsClick(ev) {
+  if (ev.target.closest("button, a, input")) return;
+
+  const li = ev.target.closest(".board li");
+  if (li) {
+    setSelectedStudent(selectedStudentId === li.id ? null : li.id);
     return;
   }
 
-  showError("");
-  list.appendChild(student);
-  checkAllLimits();
+  const board = ev.target.closest(".board");
+  if (board && selectedStudentId) {
+    const student = document.getElementById(selectedStudentId);
+    if (student) moveStudentToBoard(student, board);
+    setSelectedStudent(null);
+  }
 }
 
 

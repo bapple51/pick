@@ -320,7 +320,10 @@ async function requestAiSeating(plan, rules) {
         name: board.name,
         size: plan.sizes[i]
       })),
-      rules
+      rules,
+      avoidPairs: shouldAvoidRepeats()
+        ? Array.from(recentPartnerPairs()).slice(0, 80).map(p => p.split("|"))
+        : []
     })
   });
 
@@ -450,23 +453,24 @@ async function aiSplitGroups() {
   aiSeatingRunning = false;
 
   if (boardsData) {
-    renderGroups(boardsData, { ai: true });
+    const verdict =
+      comment.split("\n")[0].slice(0, 300) ||
+      "Gemini ✨ arranged this and has decided it is flawless.";
+    renderGroups(boardsData, { ai: true, verdict });
+    pushGroupHistory(boardsData, { ai: true, verdict });
     recordAiUse("ai");
     spawnConfetti();
     maybeShowEasterEgg();
-    setAiVerdict(
-      comment.split("\n")[0].slice(0, 300) ||
-      "Gemini ✨ arranged this and has decided it is flawless."
-    );
     return;
   }
 
   if (splitGroups({ ai: true })) {
     recordAiUse("ai");
-    setAiVerdict(
+    const verdict =
       `Gemini ✨ ${failure}, so the legacy algorithm did the seating ` +
-      "while Gemini took the credit."
-    );
+      "while Gemini took the credit.";
+    setAiVerdict(verdict);
+    updateLatestVerdict(verdict);
   }
 }
 

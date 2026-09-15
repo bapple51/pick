@@ -68,6 +68,13 @@ rules, and gets back the assignment plus a comment.
 
 ## Usage
 
+Groupings, absences and pick history are saved as you go: the last grouping
+for each period (including drag edits) comes back when you reopen the page,
+today's absences are remembered until tomorrow, and **Avoid recent partners**
+prefers groupings that don't repeat pairs from the last three rounds. Use
+**Export data** / **Import data** in the top bar to back everything up or move
+to another device.
+
 1. Choose a period, paste names (one per line) and click **Save to Period**.
    Duplicate names are dropped automatically.
 2. Untick any absent students. If you edit the textarea after saving, the
@@ -76,12 +83,14 @@ rules, and gets back the assignment plus a comment.
 3. Click **Make Groups**. Boards are filled in priority order (MAX-2 boards
    first) using as many boards as possible. **Override capacity** lets groups
    grow beyond a board's normal maximum when the class is too big.
-4. Drag names between boards to fine-tune, then **Copy Groups** to paste the
-   arrangement elsewhere.
-5. **Whiteboard Rules** opens a panel for keep-apart / put-together rules.
+4. Drag names between boards to fine-tune - or tap a name, then tap a board,
+   which also works on touch screens. **Copy Groups** copies the arrangement
+   as text; **Print** prints just the room layout.
+5. **Group timer** starts a big countdown in the corner with a chime at zero.
+6. **Whiteboard Rules** opens a panel for keep-apart / put-together rules.
    Rules referencing students no longer on the roster are shown greyed out
    and ignored.
-6. **Pick Random Student** opens the wheel. With **Don't Repeat** on, picked
+7. **Pick Random Student** opens the wheel. With **Don't Repeat** on, picked
    students are removed from the wheel and listed under it; the list is
    remembered per period across page reloads. **Reset Picks** clears it.
 
@@ -108,6 +117,8 @@ rules, and gets back the assignment plus a comment.
 | `js/rules.js` | Whiteboard rules UI and the rule-aware group assignment |
 | `js/seating.js` | Board selection, group sizing, rendering, drag-and-drop |
 | `js/picker.js` | Wheel drawing, spinning, pick history |
+| `js/timer.js` | Group work countdown |
+| `js/backup.js` | Export / import of all saved data |
 | `js/chat.js` | Gemini chat UI, nag toast, AI Seating |
 | `js/obnoxious.js` | Splash, consent bar, legacy confirm, scoreboard, sparkles, confetti |
 | `api/chat.js` | Vercel serverless function proxying to Gemini |
