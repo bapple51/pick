@@ -254,6 +254,7 @@ function scheduleNagToast(delayMs) {
 }
 
 function showNagToast() {
+  if (!isAiEnabled()) return;
   if (isChatOpen() || isPickerOpen() || isSplashOpen()) {
     scheduleNagToast(chatConfig.nagRepeatMs);
     return;

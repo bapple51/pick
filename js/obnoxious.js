@@ -12,6 +12,72 @@ const obnoxious = {
   confettiPieces: 48
 };
 
+const PLAIN_TITLE = "Classroom Helper";
+
+
+/* =====================================================
+   AI MODE
+
+   "Continue without AI" switches every AI feature off
+   and the page back to a normal classroom tool for the
+   rest of the browser session. "Turn AI on" in the top
+   bar brings it all back (splash included).
+   ===================================================== */
+
+const aiModeKey = "aiMode";
+
+let aiEnabled = true;
+
+function isAiEnabled() {
+  return aiEnabled;
+}
+
+function readAiMode() {
+  try {
+    return sessionStorage.getItem(aiModeKey) !== "off";
+  } catch (error) {
+    return true;
+  }
+}
+
+function writeAiMode(enabled) {
+  try {
+    sessionStorage.setItem(aiModeKey, enabled ? "on" : "off");
+  } catch (error) {
+    /* private mode etc. - the choice just won't survive a reload */
+  }
+}
+
+function applyAiMode(enabled) {
+  aiEnabled = enabled;
+  document.body.classList.toggle("no-ai", !enabled);
+
+  if (!enabled) {
+    hideNagToast();
+    clearTimeout(nagTimer);
+    document.title = PLAIN_TITLE;
+    document.querySelectorAll(".cursor-sparkle, .ai-confetti").forEach(el => el.remove());
+    const consent = document.getElementById("aiConsent");
+    if (consent) consent.classList.remove("open");
+    closeLegacyConfirm();
+    setPickerAiNote("");
+  }
+
+  renderAiScore();
+}
+
+function disableAi() {
+  writeAiMode(false);
+  applyAiMode(false);
+}
+
+function enableAi() {
+  writeAiMode(true);
+  applyAiMode(true);
+  scheduleNagToast(chatConfig.nagFirstDelayMs);
+  showSplash();
+}
+
 
 /* =====================================================
    AI SCOREBOARD
@@ -93,16 +159,24 @@ function showSplash() {
   }, 1000);
 }
 
-function dismissSplash() {
+function closeSplash() {
   clearInterval(splashTimer);
   const splash = document.getElementById("aiSplash");
   if (splash) splash.classList.remove("open");
   document.body.style.overflow = "";
-  showAiConsent();
+}
+
+/*
+ * "Continue without AI": the site becomes normal.
+ */
+function dismissSplash() {
+  closeSplash();
+  disableAi();
 }
 
 function splashUnleash() {
-  dismissSplash();
+  closeSplash();
+  showAiConsent();
   if (getActiveStudents().length >= 2) {
     aiSplitGroups();
   } else {
@@ -136,6 +210,10 @@ function acceptAi() {
    ===================================================== */
 
 function confirmLegacy() {
+  if (!isAiEnabled()) {
+    splitGroups();
+    return;
+  }
   hideNagToast();
   const modal = document.getElementById("legacyConfirm");
   if (modal) modal.classList.add("open");
@@ -176,6 +254,7 @@ const obnoxiousTitles = [
 let titleIndex = 0;
 
 function cycleTitle() {
+  if (!isAiEnabled()) return;
   titleIndex = (titleIndex + 1) % obnoxiousTitles.length;
   document.title = obnoxiousTitles[titleIndex];
 }
@@ -188,6 +267,7 @@ function cycleTitle() {
 let lastSparkleAt = 0;
 
 function sparkleAt(x, y) {
+  if (!isAiEnabled()) return;
   const now = Date.now();
   if (now - lastSparkleAt < obnoxious.sparkleEveryMs) return;
   lastSparkleAt = now;
@@ -210,6 +290,7 @@ function sparkleAt(x, y) {
 const confettiEmoji = ["✨", "🚀", "🤖", "💎", "⭐", "🧠"];
 
 function spawnConfetti(count = obnoxious.confettiPieces) {
+  if (!isAiEnabled()) return;
   for (let i = 0; i < count; i++) {
     const piece = document.createElement("span");
     piece.className = "ai-confetti";
@@ -230,8 +311,15 @@ function spawnConfetti(count = obnoxious.confettiPieces) {
    ===================================================== */
 
 document.addEventListener("DOMContentLoaded", () => {
-  renderAiScore();
-  showSplash();
+  const enabled = readAiMode();
+  applyAiMode(enabled);
+
+  if (enabled) {
+    showSplash();
+  } else {
+    clearTimeout(nagTimer);
+  }
+
   setInterval(cycleTitle, obnoxious.titleCycleMs);
 
   document.addEventListener("mousemove", event => {

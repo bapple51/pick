@@ -47,7 +47,7 @@ function aiSpinWheel() {
 
 function setPickerAiNote(text) {
   const note = document.getElementById("pickerAiNote");
-  if (note) note.textContent = text;
+  if (note) note.textContent = isAiEnabled() ? text : "";
 }
 
 function loadPickedStudents() {

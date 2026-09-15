@@ -1516,6 +1516,64 @@
     }
 
     /* =====================================================
+       NO-AI MODE
+
+       body.no-ai hides every AI feature and restores the
+       plain look.
+       ===================================================== */
+
+    .enable-ai-button {
+      display: none;
+      margin-right: auto;
+      font-size: 13px;
+      padding: 6px 12px;
+    }
+
+    .no-ai .enable-ai-button {
+      display: inline-block;
+    }
+
+    .no-ai .ai-only,
+    .no-ai .ai-only-block,
+    .no-ai .flex-container .ai-button,
+    .no-ai .mini-ai,
+    .no-ai .ai-fab,
+    .no-ai .ai-watermark,
+    .no-ai .nag-toast,
+    .no-ai .ai-consent,
+    .no-ai .ai-splash,
+    .no-ai .ai-overlay,
+    .no-ai .legacy-confirm,
+    .no-ai #chatModal,
+    .no-ai #aiSpinButton,
+    .no-ai .picker-ai-note,
+    .no-ai .legacy-badge,
+    .no-ai .ai-verdict.muted,
+    .no-ai .cursor-sparkle,
+    .no-ai .ai-confetti {
+      display: none !important;
+    }
+
+    .no-ai .legacy-button {
+      font-size: 15px;
+      opacity: 1;
+      background: #0066cc;
+    }
+
+    .no-ai .legacy-button:hover {
+      background: #004999;
+    }
+
+    .no-ai #spinButton {
+      background: #0066cc;
+      font-size: 18px;
+    }
+
+    .no-ai #spinButton:hover {
+      background: #004999;
+    }
+
+    /* =====================================================
        EASTER EGG
        ===================================================== */
 

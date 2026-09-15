@@ -51,15 +51,17 @@ function renderRoom(boardsData = {}, options = {}) {
       </div>`
     : "";
 
+  const aiOn = typeof isAiEnabled !== "function" || isAiEnabled();
+
   const badge = options.ai
     ? `<span class="ai-badge" title="Identical to the legacy button, but AI.">✨ Gemini-Optimized</span>`
-    : hasStudents
+    : hasStudents && aiOn
       ? `<span class="legacy-badge" title="Not AI. Gemini is disappointed.">Legacy</span>`
       : "";
 
   const verdict = options.ai
     ? `<div class="ai-verdict"><span class="ai-verdict-label">✨ Gemini says:</span> <span id="aiVerdict">…</span></div>`
-    : hasStudents
+    : hasStudents && aiOn
       ? `<div class="ai-verdict muted">Psst — ✨ Gemini AI Seating would have done this with 100% more AI.</div>`
       : "";
 

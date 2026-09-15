@@ -15,7 +15,9 @@ A single-page, no-build classroom tool for teachers:
   parody; see `api/weids-prompt.js`). Branded as Gemini in the UI, and the UI
   is deliberately obnoxious about it: a banner, a pulsing floating button, a
   nag toast every 20 seconds, a welcome splash with a 5-second countdown
-  before you may "continue without AI", an AI consent bar whose two buttons
+  before you may "continue without AI" (which really does switch every AI
+  feature off for the rest of the browser session - "Turn AI on" in the top
+  bar brings it back), an AI consent bar whose two buttons
   both accept, a confirmation before making groups without AI, a permanent
   AI-vs-Legacy scoreboard, a sparkle cursor trail, confetti, a cycling tab
   title, a wobbling watermark, and **✨ Gemini AI Seating**, which
